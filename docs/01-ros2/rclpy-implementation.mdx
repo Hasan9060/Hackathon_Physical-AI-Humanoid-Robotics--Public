@@ -1,0 +1,1090 @@
+---
+title: ROS 2 Python Implementation with rclpy
+description: Hands-on ROS 2 programming using Python and the rclpy client library
+sidebar_label: Python Implementation
+---
+
+# ROS 2 Python Implementation with rclpy
+
+This module provides comprehensive coverage of ROS 2 programming using Python and the rclpy client library. You'll learn to create complete robotics applications with proper node architecture, communication patterns, and real-world implementation examples.
+
+## Introduction to rclpy
+
+### What is rclpy?
+
+rclpy is the official ROS 2 client library for Python. It provides Python bindings for the ROS Client Library (RCL), allowing developers to write ROS 2 nodes, publishers, subscribers, services, and action clients entirely in Python.
+
+### Advantages of Python in ROS 2
+
+**Rapid Development:**
+- Dynamic typing and interpreted nature
+- Extensive standard library and third-party packages
+- Excellent for prototyping and AI/ML integration
+
+**Data Science Integration:**
+- Native support for NumPy, OpenCV, and machine learning libraries
+- Easy integration with TensorFlow and PyTorch
+- Powerful data analysis and visualization capabilities
+
+**Educational Benefits:**
+- Gentle learning curve for beginners
+- Readable and maintainable code
+- Extensive documentation and community support
+
+## Setting Up Your Python Environment
+
+### Prerequisites
+
+**Python Requirements:**
+- Python 3.8 or higher (3.10 recommended for Humble)
+- pip package manager
+- Virtual environment support
+
+**ROS 2 Python Dependencies:**
+```bash
+# Install ROS 2 Python packages
+sudo apt install python3-pip
+sudo apt install python3-argcomplete
+pip install rosdepc
+
+# Install common Python packages for robotics
+pip install numpy opencv-python matplotlib scipy
+pip install scikit-learn tensorflow torch
+```
+
+### Virtual Environment Setup
+
+**Create Virtual Environment:**
+```bash
+# Create virtual environment
+python3 -m venv ~/ros2_python_env
+
+# Activate environment
+source ~/ros2_python_env/bin/activate
+
+# Upgrade pip
+pip install --upgrade pip
+```
+
+**Environment Configuration:**
+```bash
+# Add to ~/.bashrc for auto-activation
+echo "source ~/ros2_python_env/bin/activate" >> ~/.bashrc
+
+# Set PYTHONPATH for ROS 2
+export PYTHONPATH=$PYTHONPATH:/opt/ros/humble/lib/python3.10/site-packages
+```
+
+## Basic Node Creation
+
+### Creating Your First Node
+
+**Simple Publisher Node:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+import time
+
+class SimplePublisher(Node):
+    def __init__(self):
+        super().__init__('simple_publisher')
+
+        # Create publisher with topic name and message type
+        self.publisher_ = self.create_publisher(
+            String,
+            'chatter',
+            10  # Queue size
+        )
+
+        # Create timer for periodic publishing
+        timer_period = 1.0  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+
+        self.get_logger().info('Simple publisher node initialized')
+        self.counter = 0
+
+    def timer_callback(self):
+        # Create and publish message
+        msg = String()
+        msg.data = f'Hello, ROS 2! Count: {self.counter}'
+
+        self.publisher_.publish(msg)
+        self.get_logger().info(f'Publishing: "{msg.data}"')
+
+        self.counter += 1
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        # Create and spin node
+        node = SimplePublisher()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Cleanup
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+**Simple Subscriber Node:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+class SimpleSubscriber(Node):
+    def __init__(self):
+        super().__init__('simple_subscriber')
+
+        # Create subscriber with topic name and message type
+        self.subscription_ = self.create_subscription(
+            String,
+            'chatter',
+            self.listener_callback,
+            10  # Queue size
+        )
+
+        self.get_logger().info('Simple subscriber node initialized')
+
+    def listener_callback(self, msg):
+        # Process received message
+        self.get_logger().info(f'Received: "{msg.data}"')
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        node = SimpleSubscriber()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Multi-Node Applications
+
+**Creating Multi-Function Nodes:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String, Int32
+from geometry_msgs.msg import Twist
+
+class MultiFunctionNode(Node):
+    def __init__(self):
+        super().__init__('multi_function_node')
+
+        # Publishers
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.status_pub = self.create_publisher(String, 'status', 10)
+
+        # Subscribers
+        self.sensor_sub = self.create_subscription(
+            Int32, 'sensor_data', self.sensor_callback, 10
+        )
+
+        # Timers
+        self.status_timer = self.create_timer(2.0, self.publish_status)
+        self.control_timer = self.create_timer(0.1, self.control_loop)
+
+        # State variables
+        self.sensor_value = 0
+        self.moving = False
+
+        self.get_logger().info('Multi-function node initialized')
+
+    def sensor_callback(self, msg):
+        """Handle incoming sensor data"""
+        self.sensor_value = msg.data
+        self.get_logger().info(f'Sensor value: {self.sensor_value}')
+
+    def publish_status(self):
+        """Publish periodic status updates"""
+        msg = String()
+        msg.data = f'Status: {"Moving" if self.moving else "Stopped"}, Sensor: {self.sensor_value}'
+        self.status_pub.publish(msg)
+
+    def control_loop(self):
+        """Main control logic"""
+        twist = Twist()
+
+        # Simple control logic based on sensor value
+        if self.sensor_value > 50:
+            twist.linear.x = 0.5  # Move forward
+            self.moving = True
+        else:
+            twist.linear.x = 0.0  # Stop
+            self.moving = False
+
+        self.cmd_vel_pub.publish(twist)
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        node = MultiFunctionNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Advanced Communication Patterns
+
+### Service Server Implementation
+
+**Service Definition:**
+```yaml
+# srv/Calculation.srv
+int64 a
+int64 b
+---
+int64 sum
+float64 average
+```
+
+**Service Server Node:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from my_interfaces.srv import Calculation
+
+class CalculationServer(Node):
+    def __init__(self):
+        super().__init__('calculation_server')
+
+        # Create service
+        self.service = self.create_service(
+            Calculation,
+            'calculate',
+            self.calculate_callback
+        )
+
+        self.get_logger().info('Calculation server ready')
+
+    def calculate_callback(self, request, response):
+        """Handle calculation requests"""
+        # Perform calculation
+        response.sum = request.a + request.b
+        response.average = (request.a + request.b) / 2.0
+
+        self.get_logger().info(
+            f'Calculated: {request.a} + {request.b} = {response.sum}'
+        )
+
+        return response
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        node = CalculationServer()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+**Service Client Node:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from my_interfaces.srv import Calculation
+
+class CalculationClient(Node):
+    def __init__(self):
+        super().__init__('calculation_client')
+
+        # Create client
+        self.client = self.create_client(Calculation, 'calculate')
+
+        # Wait for service to be available
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for calculation service...')
+
+    def send_request(self, a, b):
+        """Send calculation request"""
+        # Create request
+        request = Calculation.Request()
+        request.a = a
+        request.b = b
+
+        # Send request asynchronously
+        self.future = self.client.call_async(request)
+        self.future.add_done_callback(self.handle_response)
+
+        self.get_logger().info(f'Sending calculation request: {a} + {b}')
+
+    def handle_response(self, future):
+        """Handle service response"""
+        try:
+            response = future.result()
+            self.get_logger().info(
+                f'Result: Sum={response.sum}, Average={response.average}'
+            )
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    client_node = CalculationClient()
+
+    # Send test requests
+    client_node.send_request(10, 20)
+    client_node.send_request(5, 15)
+
+    try:
+        rclpy.spin(client_node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        client_node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Action Client Implementation
+
+**Action Definition:**
+```yaml
+# action/Fibonacci.action
+int32 order
+---
+int32[] sequence
+---
+string feedback_msg
+```
+
+**Action Server Node:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.action import ActionServer
+from rclpy.node import Node
+from my_interfaces.action import Fibonacci
+import time
+
+class FibonacciActionServer(Node):
+    def __init__(self):
+        super().__init__('fibonacci_action_server')
+
+        # Create action server
+        self.action_server = ActionServer(
+            self,
+            Fibonacci,
+            'fibonacci',
+            self.execute_callback
+        )
+
+        self.get_logger().info('Fibonacci action server ready')
+
+    def execute_callback(self, goal_handle):
+        """Execute Fibonacci sequence calculation"""
+        self.get_logger().info(f'Executing goal with order {goal_handle.request.order}')
+
+        feedback_msg = Fibonacci.Feedback()
+        feedback_msg.sequence = []
+
+        # Calculate Fibonacci sequence
+        sequence = []
+        for i in range(goal_handle.request.order):
+            if i == 0:
+                sequence.append(0)
+            elif i == 1:
+                sequence.append(1)
+            else:
+                sequence.append(sequence[i-1] + sequence[i-2])
+
+            # Publish feedback
+            feedback_msg.sequence = sequence
+            goal_handle.publish_feedback(feedback_msg)
+            self.get_logger().info(f'Feedback: {sequence}')
+
+            # Simulate work
+            time.sleep(0.5)
+
+        # Set final result
+        goal_handle.succeed()
+        result = Fibonacci.Result()
+        result.sequence = sequence
+
+        self.get_logger().info(f'Goal completed with sequence: {sequence}')
+
+        return result
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        node = FibonacciActionServer()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Parameters and Configuration
+
+### Parameter Declaration and Usage
+
+**Parameter Management Node:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from rclpy.parameter import Parameter
+from std_msgs.msg import String
+
+class ParameterNode(Node):
+    def __init__(self):
+        super().__init__('parameter_node')
+
+        # Declare parameters with default values
+        self.declare_parameter('string_param', 'default_value')
+        self.declare_parameter('int_param', 42)
+        self.declare_parameter('float_param', 3.14)
+        self.declare_parameter('bool_param', True)
+        self.declare_parameter('array_param', [1, 2, 3, 4, 5])
+
+        # Get parameter values
+        self.string_value = self.get_parameter('string_param').value
+        self.int_value = self.get_parameter('int_param').value
+        self.float_value = self.get_parameter('float_param').value
+        self.bool_value = self.get_parameter('bool_param').value
+        self.array_value = self.get_parameter('array_param').value
+
+        # Create publisher
+        self.publisher = self.create_publisher(String, 'parameter_info', 10)
+
+        # Timer for periodic parameter reporting
+        self.timer = self.create_timer(5.0, self.report_parameters)
+
+        # Parameter callback for dynamic updates
+        self.add_on_set_parameters_callback(self.parameters_callback)
+
+        self.get_logger().info('Parameter node initialized')
+
+    def parameters_callback(self, params):
+        """Handle parameter updates"""
+        for param in params:
+            if param.name == 'string_param' and param.type_ == Parameter.Type.STRING:
+                self.string_value = param.value
+                self.get_logger().info(f'Updated string_param: {self.string_value}')
+            elif param.name == 'int_param' and param.type_ == Parameter.Type.INTEGER:
+                self.int_value = param.value
+                self.get_logger().info(f'Updated int_param: {self.int_value}')
+
+        return param.set_successful
+
+    def report_parameters(self):
+        """Publish current parameter values"""
+        msg = String()
+        msg.data = f'Parameters - String: {self.string_value}, Int: {self.int_value}, ' \
+                  f'Float: {self.float_value}, Bool: {self.bool_value}, Array: {self.array_value}'
+
+        self.publisher.publish(msg)
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        node = ParameterNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### Loading Parameters from File
+
+**Parameter File (config.yaml):**
+```yaml
+parameter_node:
+  ros__parameters:
+    string_param: "configured_value"
+    int_param: 100
+    float_param: 2.71828
+    bool_param: false
+    array_param: [10, 20, 30]
+```
+
+**Launch File with Parameters:**
+```python
+from launch import LaunchDescription
+from launch_ros.actions import Node
+import os
+from ament_index_python.packages import get_package_share_directory
+
+def generate_launch_description():
+    config_file = os.path.join(
+        get_package_share_directory('my_package'),
+        'config',
+        'config.yaml'
+    )
+
+    return LaunchDescription([
+        Node(
+            package='my_package',
+            executable='parameter_node',
+            name='parameter_node',
+            parameters=[config_file]
+        )
+    ])
+```
+
+## Error Handling and Robust Programming
+
+### Exception Handling Patterns
+
+**Robust Node Implementation:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+import traceback
+from functools import partial
+
+class RobustNode(Node):
+    def __init__(self):
+        super().__init__('robust_node')
+
+        # Initialize with error handling
+        try:
+            self.setup_publishers()
+            self.setup_subscribers()
+            self.setup_timers()
+            self.get_logger().info('Robust node initialized successfully')
+        except Exception as e:
+            self.get_logger().error(f'Initialization failed: {e}')
+            self.get_logger().error(traceback.format_exc())
+            raise
+
+    def setup_publishers(self):
+        """Setup publishers with error handling"""
+        try:
+            self.publisher = self.create_publisher(
+                String, 'robust_output', 10
+            )
+            self.get_logger().info('Publisher setup successful')
+        except Exception as e:
+            self.get_logger().error(f'Publisher setup failed: {e}')
+            raise
+
+    def setup_subscribers(self):
+        """Setup subscribers with error handling"""
+        try:
+            self.subscription = self.create_subscription(
+                String, 'robust_input', self.subscription_callback, 10
+            )
+            self.get_logger().info('Subscriber setup successful')
+        except Exception as e:
+            self.get_logger().error(f'Subscriber setup failed: {e}')
+            raise
+
+    def setup_timers(self):
+        """Setup timers with error handling"""
+        try:
+            self.timer = self.create_timer(
+                1.0, self.timer_callback
+            )
+            self.get_logger().info('Timer setup successful')
+        except Exception as e:
+            self.get_logger().error(f'Timer setup failed: {e}')
+            raise
+
+    def subscription_callback(self, msg):
+        """Safe subscription callback with error handling"""
+        try:
+            self.process_message(msg)
+        except Exception as e:
+            self.get_logger().error(f'Error in subscription callback: {e}')
+            self.get_logger().error(traceback.format_exc())
+
+    def timer_callback(self):
+        """Safe timer callback with error handling"""
+        try:
+            self.publish_status()
+        except Exception as e:
+            self.get_logger().error(f'Error in timer callback: {e}')
+            self.get_logger().error(traceback.format_exc())
+
+    def process_message(self, msg):
+        """Process incoming message safely"""
+        if msg.data:
+            # Validate message content
+            if len(msg.data) > 1000:
+                self.get_logger().warning('Message too long, truncating')
+                msg.data = msg.data[:1000]
+
+            # Process the message
+            processed_data = msg.data.upper()
+
+            # Publish result
+            response = String()
+            response.data = f"Processed: {processed_data}"
+            self.publisher.publish(response)
+
+            self.get_logger().info(f'Processed message: {msg.data[:50]}...')
+
+    def publish_status(self):
+        """Publish periodic status information"""
+        try:
+            msg = String()
+            msg.data = f'Status: Running at {self.get_clock().now().to_msg().sec}'
+            self.publisher.publish(msg)
+        except Exception as e:
+            self.get_logger().error(f'Failed to publish status: {e}')
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    node = None
+    try:
+        node = RobustNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        print("Shutdown requested by user")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        traceback.print_exc()
+    finally:
+        if node is not None:
+            try:
+                node.destroy_node()
+            except Exception as e:
+                print(f"Error during node cleanup: {e}")
+
+        try:
+            rclpy.shutdown()
+        except Exception as e:
+            print(f"Error during rclpy shutdown: {e}")
+
+if __name__ == '__main__':
+    main()
+```
+
+## Testing and Quality Assurance
+
+### Unit Testing with pytest
+
+**Test Setup:**
+```python
+# tests/test_my_node.py
+import pytest
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+from my_package.my_node import MyNode
+
+class TestMyNode:
+    @pytest.fixture
+    def node(self):
+        rclpy.init()
+        node = MyNode()
+        yield node
+        node.destroy_node()
+        rclpy.shutdown()
+
+    def test_node_initialization(self, node):
+        """Test that node initializes correctly"""
+        assert node.get_name() == 'my_node'
+        assert node.get_namespace() == '/'
+
+    def test_publisher_creation(self, node):
+        """Test that publisher is created correctly"""
+        assert hasattr(node, 'publisher')
+        assert node.publisher is not None
+
+    def test_message_processing(self, node):
+        """Test message processing logic"""
+        # Create test message
+        test_msg = String()
+        test_msg.data = "test message"
+
+        # Process message
+        result = node.process_message(test_msg)
+
+        # Verify result
+        assert result is not None
+        assert "TEST MESSAGE" in result
+
+def test_node_with_parameter():
+    """Test node with parameter configuration"""
+    rclpy.init()
+
+    node = Node('test_node')
+    node.declare_parameter('test_param', 'default_value')
+
+    param_value = node.get_parameter('test_param').value
+    assert param_value == 'default_value'
+
+    node.destroy_node()
+    rclpy.shutdown()
+```
+
+### Integration Testing
+
+**Integration Test Example:**
+```python
+# tests/test_integration.py
+import pytest
+import rclpy
+import time
+from std_msgs.msg import String, Int32
+from geometry_msgs.msg import Twist
+
+class TestNodeIntegration:
+    @pytest.fixture
+    def ros_context(self):
+        rclpy.init()
+        yield
+        rclpy.shutdown()
+
+    def test_publisher_subscriber_communication(self, ros_context):
+        """Test that publisher and subscriber communicate correctly"""
+
+        # Create test node
+        test_node = rclpy.create_node('test_node')
+
+        # Setup publisher and subscriber
+        publisher = test_node.create_publisher(String, 'test_topic', 10)
+        received_messages = []
+
+        def message_callback(msg):
+            received_messages.append(msg.data)
+
+        subscriber = test_node.create_subscription(
+            String, 'test_topic', message_callback, 10
+        )
+
+        # Publish test message
+        test_msg = String()
+        test_msg.data = "integration test message"
+        publisher.publish(test_msg)
+
+        # Process messages
+        start_time = time.time()
+        while len(received_messages) == 0 and time.time() - start_time < 2.0:
+            rclpy.spin_once(test_node, timeout_sec=0.1)
+
+        # Verify communication
+        assert len(received_messages) == 1
+        assert received_messages[0] == "integration test message"
+
+        test_node.destroy_node()
+
+    def test_service_client_server(self, ros_context):
+        """Test service client-server communication"""
+        from my_interfaces.srv import Calculation
+
+        # Create service server
+        server_node = rclpy.create_node('test_server')
+
+        def calculate_callback(request, response):
+            response.sum = request.a + request.b
+            response.average = (request.a + request.b) / 2.0
+            return response
+
+        service = server_node.create_service(
+            Calculation, 'test_calculate', calculate_callback
+        )
+
+        # Create service client
+        client_node = rclpy.create_node('test_client')
+        client = client_node.create_client(Calculation, 'test_calculate')
+
+        # Wait for service
+        start_time = time.time()
+        while not client.wait_for_service(timeout_sec=1.0):
+            if time.time() - start_time > 5.0:
+                assert False, "Service not available"
+
+        # Send request
+        request = Calculation.Request()
+        request.a = 10
+        request.b = 20
+
+        future = client.call_async(request)
+
+        # Process result
+        while not future.done():
+            rclpy.spin_once(client_node, timeout_sec=0.1)
+
+        response = future.result()
+
+        # Verify response
+        assert response.sum == 30
+        assert response.average == 15.0
+
+        server_node.destroy_node()
+        client_node.destroy_node()
+```
+
+## Performance Optimization
+
+### Memory Management
+
+**Efficient Node Implementation:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+import numpy as np
+import gc
+
+class EfficientNode(Node):
+    def __init__(self):
+        super().__init__('efficient_node')
+
+        # Memory-efficient subscriber
+        self.subscription = self.create_subscription(
+            Image, 'image_topic', self.image_callback, 10
+        )
+
+        # Pre-allocated arrays for processing
+        self.processing_buffer = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        # Performance tracking
+        self.processing_times = []
+        self.max_history = 100
+
+        self.get_logger().info('Efficient node initialized')
+
+    def image_callback(self, msg):
+        """Memory-efficient image processing"""
+        import time
+
+        start_time = time.time()
+
+        try:
+            # Convert ROS image to numpy array efficiently
+            if msg.encoding == 'bgr8':
+                # Use pre-allocated buffer when possible
+                np_array = np.frombuffer(msg.data, dtype=np.uint8)
+                np_array = np_array.reshape((msg.height, msg.width, 3))
+
+                # Use pre-allocated buffer for processing
+                np.copyto(self.processing_buffer, np_array)
+
+                # Process in-place to minimize memory allocation
+                self.process_image_inplace(self.processing_buffer)
+
+                # Free memory
+                del np_array
+                gc.collect()
+
+            # Track performance
+            processing_time = time.time() - start_time
+            self.update_performance_stats(processing_time)
+
+        except Exception as e:
+            self.get_logger().error(f'Error processing image: {e}')
+
+    def process_image_inplace(self, image_array):
+        """Process image in-place to minimize memory usage"""
+        # Example: apply simple filter in-place
+        image_array[:, :, 0] = np.minimum(image_array[:, :, 0] + 10, 255)
+
+    def update_performance_stats(self, processing_time):
+        """Update performance statistics efficiently"""
+        self.processing_times.append(processing_time)
+
+        # Keep only recent history
+        if len(self.processing_times) > self.max_history:
+            self.processing_times = self.processing_times[-self.max_history:]
+
+        # Log performance every 10 frames
+        if len(self.processing_times) % 10 == 0:
+            avg_time = sum(self.processing_times) / len(self.processing_times)
+            self.get_logger().info(f'Average processing time: {avg_time:.4f}s')
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        node = EfficientNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Best Practices and Guidelines
+
+### Code Organization
+
+**Package Structure:**
+```
+my_robot_package/
+├── my_robot_package/
+│   ├── __init__.py
+│   ├── node1.py
+│   ├── node2.py
+│   ├── utilities.py
+│   └── constants.py
+├── launch/
+│   ├── main.launch.py
+│   └── simulation.launch.py
+├── config/
+│   ├── parameters.yaml
+│   └── rviz_config.rviz
+├── tests/
+│   ├── test_node1.py
+│   └── test_integration.py
+├── resource/
+│   └── my_robot_package
+├── package.xml
+├── setup.py
+└── setup.cfg
+```
+
+**Modular Code Design:**
+```python
+# my_robot_package/constants.py
+"""Constants used across the package"""
+ROBOT_NAME = "mobile_base"
+MAX_VELOCITY = 2.0
+UPDATE_FREQUENCY = 10.0
+
+# my_robot_package/utilities.py
+"""Utility functions for robot control"""
+import math
+import numpy as np
+
+def calculate_distance(point1, point2):
+    """Calculate Euclidean distance between two points"""
+    return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+
+def normalize_angle(angle):
+    """Normalize angle to [-pi, pi]"""
+    while angle > math.pi:
+        angle -= 2 * math.pi
+    while angle < -math.pi:
+        angle += 2 * math.pi
+    return angle
+
+# my_robot_package/node1.py
+"""Main robot control node"""
+import rclpy
+from rclpy.node import Node
+from .constants import ROBOT_NAME, MAX_VELOCITY
+from .utilities import calculate_distance, normalize_angle
+
+class RobotControlNode(Node):
+    def __init__(self):
+        super().__init__(f'{ROBOT_NAME}_control')
+        # Implementation using constants and utilities
+```
+
+### Documentation Standards
+
+**Comprehensive Node Documentation:**
+```python
+#!/usr/bin/env python3
+"""
+Robot Control Node
+
+This node implements high-level robot control logic for mobile base navigation
+and obstacle avoidance. It integrates sensor data, plans paths, and publishes
+velocity commands.
+
+Authors: Your Name <your.email@example.com>
+License: MIT
+Date: 2024
+
+Subscribed Topics:
+- /robot/lidar_scan (sensor_msgs/LaserScan): Laser scanner data
+- /robot/camera/image (sensor_msgs/Image): Camera images
+- /robot/odom (nav_msgs/Odometry): Robot odometry
+
+Published Topics:
+- /robot/cmd_vel (geometry_msgs/Twist): Velocity commands
+- /robot/status (std_msgs/String): Robot status updates
+
+Services:
+- /robot/stop_service (std_srvs/Empty): Emergency stop service
+- /robot/set_mode (my_interfaces/SetMode): Set operating mode
+
+Parameters:
+- max_velocity (double): Maximum linear velocity (default: 1.0 m/s)
+- safety_distance (double): Minimum obstacle distance (default: 0.5 m)
+- update_rate (double): Control loop frequency (default: 10.0 Hz)
+
+Example Usage:
+    # Run with custom parameters
+    ros2 run my_package robot_control_node --ros-args -p max_velocity:=2.0
+
+    # Set safety distance dynamically
+    ros2 param set /robot_control_node safety_distance 1.0
+
+"""
+
+import rclpy
+from rclpy.node import Node
+# ... rest of the implementation
+```
+
+## Next Steps
+
+This comprehensive guide to ROS 2 Python implementation provides the foundation for building sophisticated robotics applications. The next sections will cover:
+
+1. **URDF and Robot Modeling**: Creating accurate 3D robot models
+2. **Simulation Integration**: Connecting Python nodes to Gazebo and Isaac Sim
+3. **Advanced AI Integration**: Implementing machine learning and computer vision
+
+By mastering these Python programming patterns and best practices, you'll be equipped to develop production-ready robotics applications using the modern ROS 2 ecosystem.

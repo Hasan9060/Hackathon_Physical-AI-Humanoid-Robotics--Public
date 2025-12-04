@@ -1,0 +1,518 @@
+---
+title: ROS 2 Fundamentals
+description: Introduction to Robot Operating System 2 concepts and architecture
+sidebar_label: ROS 2 Fundamentals
+---
+
+# ROS 2 Fundamentals
+
+This module introduces the fundamental concepts of the Robot Operating System 2 (ROS 2), the foundation for modern robotics development. ROS 2 provides the framework for building distributed, real-time robotics applications with robust communication patterns and extensive tooling support.
+
+## Introduction to ROS 2
+
+### What is ROS 2?
+
+Robot Operating System 2 (ROS 2) is a flexible framework for writing robot software. It is a collection of tools, libraries, and conventions that aim to simplify the task of creating complex and robust robot behavior across a wide variety of robotic platforms.
+
+### Key Improvements over ROS 1
+
+**Real-Time Capabilities:**
+- Deterministic scheduling and priority handling
+- Real-time kernel support for critical operations
+- Bounded latency communication
+
+**Multi-Robot Support:**
+- Default DDS (Data Distribution Service) middleware
+- Intrinsic support for multiple robots in same network
+- Zero-copy data transfer for efficiency
+
+**Production Readiness:**
+- Strong security features with DDS Security
+- Quality of Service (QoS) policies
+- Professional support and commercial backing
+
+## ROS 2 Architecture
+
+### Core Concepts
+
+**Nodes:**
+- Independent processes that perform computation
+- Communicate via topics, services, and actions
+- Can be distributed across multiple machines
+
+**Topics:**
+- Named communication channels
+- Publish/subscribe pattern
+- Many-to-many communication
+
+**Messages:**
+- Data structures for node communication
+- Strongly typed with .msg definitions
+- Support for complex nested structures
+
+**Services:**
+- Request/response communication pattern
+- Synchronous client-server interaction
+- Used for infrequent operations
+
+**Actions:**
+- Long-running asynchronous operations
+- Provide feedback during execution
+- Support cancellation and goal handling
+
+### Communication Middleware
+
+ROS 2 uses DDS as its default middleware abstraction (RMW). DDS provides:
+
+**Discovery:**
+- Automatic discovery of nodes and topics
+- Dynamic network topology management
+- No central coordinator required
+
+**Data Distribution:**
+- Efficient data transfer mechanisms
+- Publisher/subscriber decoupling
+- Reliable and best-effort delivery options
+
+**Quality of Service:**
+- Reliability, durability, latency settings
+- Deadline and lifespan policies
+- Liveliness management
+
+## ROS 2 Installation
+
+### System Requirements
+
+**Operating Systems:**
+- Ubuntu 22.04 LTS (recommended)
+- Ubuntu 20.04 LTS (Hawthorn)
+- Windows 10/11 (Foxy+)
+- macOS Big Sur/Monterey (limited support)
+
+**Hardware Requirements:**
+- Minimum: 4GB RAM, 2 CPU cores
+- Recommended: 8GB RAM, 4 CPU cores
+- Storage: 20GB free space
+
+### Installation Process
+
+**Ubuntu 22.04 LTS (Humble Hawksbill):**
+
+```bash
+# Set locale
+sudo apt update && sudo apt install locales
+sudo locale-gen en_US en_US.UTF-8
+sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+export LANG=en_US.UTF-8
+
+# Setup sources
+sudo apt install software-properties-common
+sudo add-apt-repository universe
+sudo apt update && sudo apt install curl -y
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# Install ROS 2
+sudo apt update
+sudo apt install ros-humble-desktop
+sudo apt install ros-humble-rviz2 ros-humble-gazebo-ros-pkgs
+```
+
+**Development Tools:**
+```bash
+sudo apt install python3-pip python3-argcomplete
+pip install rosdepc
+sudo rosdepc init
+rosdepc fix-permissions
+```
+
+## Environment Setup
+
+### Workspace Configuration
+
+Create a ROS 2 workspace for your robotics projects:
+
+```bash
+# Create workspace directory
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws
+
+# Build the workspace
+colcon build
+
+# Source the workspace
+source install/setup.bash
+```
+
+### Environment Variables
+
+**Essential Variables:**
+```bash
+# ROS Distribution
+export ROS_DISTRO=humble
+
+# Python path
+export PYTHONPATH=$PYTHONPATH:~/ros2_ws/install/lib/python3.10/site-packages
+
+# ROS Domain ID (for multi-robot setups)
+export ROS_DOMAIN_ID=0
+
+# RMW Implementation
+export RMW_IMPLEMENTATION=rmw_cyclonedx_cpp
+```
+
+**Bash Configuration:**
+```bash
+# Add to ~/.bashrc
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
+echo "export ROS_DOMAIN_ID=0" >> ~/.bashrc
+```
+
+## Basic ROS 2 Commands
+
+### Node Management
+
+**Running Nodes:**
+```bash
+# Run a single node
+ros2 run <package_name> <executable_name>
+
+# Run with specific namespace
+ros2 run <package_name> <executable_name> --ros-args -r __node:=<node_name>
+
+# Run with parameters
+ros2 run <package_name> <executable_name> --ros-args -p <parameter_name>:=<value>
+```
+
+**Node Information:**
+```bash
+# List all active nodes
+ros2 node list
+
+# Get node information
+ros2 node info /node_name
+
+# Find topics used by a node
+ros2 node info /node_name | grep "Subscribed to"
+```
+
+### Topic Operations
+
+**Topic Discovery:**
+```bash
+# List all topics
+ros2 topic list
+
+# List topics with message types
+ros2 topic list -t
+
+# Get topic information
+ros2 topic info /topic_name
+```
+
+**Data Publishing:**
+```bash
+# Publish messages manually
+ros2 topic pub /topic_name <message_type> '{data: "value"}'
+
+# Publish at specific rate
+ros2 topic pub --rate 1 /topic_name <message_type> '{data: "value"}'
+```
+
+**Data Subscribing:**
+```bash
+# Echo topic data
+ros2 topic echo /topic_name
+
+# Echo with message details
+ros2 topic echo /topic_name --full-length
+```
+
+### Service Calls
+
+**Service Information:**
+```bash
+# List all services
+ros2 service list
+
+# List services with types
+ros2 service list -t
+
+# Get service type
+ros2 service type /service_name
+```
+
+**Calling Services:**
+```bash
+# Call a service
+ros2 service call /service_name <service_type> '{field: value}'
+
+# Call with automatic tab completion
+ros2 s call /service_name <service_type> '{field: value}'
+```
+
+## Message Types
+
+### Standard Messages
+
+**Basic Types:**
+- `std_msgs/String`: Text data
+- `std_msgs/Int32`, `std_msgs/Float64`: Numeric data
+- `std_msgs/Bool`: Boolean values
+- `std_msgs/Header`: Message metadata
+
+**Geometry Messages:**
+- `geometry_msgs/Point`: 3D position
+- `geometry_msgs/Pose`: Position and orientation
+- `geometry_msgs/Twist`: Linear and angular velocity
+- `geometry_msgs/Transform`: Coordinate transformation
+
+**Sensor Messages:**
+- `sensor_msgs/LaserScan`: LiDAR data
+- `sensor_msgs/Image`: Camera images
+- `sensor_msgs/Imu`: Inertial measurement unit
+- `sensor_msgs/JointState`: Robot joint positions
+
+### Custom Messages
+
+**Creating Custom Messages:**
+
+1. **Define Message:**
+```bash
+# Create message package
+ros2 pkg create --build-type ament_cmake my_interfaces
+
+# Define message file
+# my_interfaces/msg/CustomMessage.msg
+string name
+int32 count
+float64[] values
+```
+
+2. **Package Configuration:**
+```cmake
+# CMakeLists.txt
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/CustomMessage.msg"
+)
+
+ament_package()
+```
+
+3. **Build and Use:**
+```bash
+colcon build --packages-select my_interfaces
+source install/setup.bash
+```
+
+## Quality of Service (QoS)
+
+### QoS Profiles
+
+**Default Profile:**
+- Reliability: RELIABLE
+- Durability: VOLATILE
+- Deadline: Not set
+- Lifespan: Not set
+- History: KEEP_LAST (depth=10)
+
+**Custom QoS:**
+```python
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSDurabilityPolicy
+
+# High reliability for critical data
+reliable_qos = QoSProfile(
+    reliability=QoSReliabilityPolicy.RELIABLE,
+    durability=QoSDurabilityPolicy.VOLATILE,
+    depth=10
+)
+
+# Best effort for high-frequency data
+best_effort_qos = QoSProfile(
+    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+    durability=QoSDurabilityPolicy.VOLATILE,
+    depth=1
+)
+```
+
+### QoS Compatibility
+
+**Publisher-Subscriber Compatibility:**
+- RELIABLE ↔ RELIABLE: Compatible
+- RELIABLE ↔ BEST_EFFORT: Not compatible
+- BEST_EFFORT ↔ BEST_EFFORT: Compatible
+
+**Durability Settings:**
+- VOLATILE ↔ VOLATILE: Compatible
+- TRANSIENT_LOCAL ↔ TRANSIENT_LOCAL: Compatible
+- VOLATILE ↔ TRANSIENT_LOCAL: Not compatible
+
+## ROS 2 Launch System
+
+### Launch Files
+
+**Python Launch Files:**
+```python
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    return LaunchDescription([
+        Node(
+            package='my_package',
+            executable='my_node',
+            name='my_node',
+            parameters=[{'param_name': 'param_value'}],
+            remappings=[('/old_topic', '/new_topic')]
+        )
+    ])
+```
+
+**XML Launch Files:**
+```xml
+<launch>
+    <node pkg="my_package" exec="my_node" name="my_node">
+        <param name="param_name" value="param_value"/>
+        <remap from="/old_topic" to="/new_topic"/>
+    </node>
+</launch>
+```
+
+**Running Launch Files:**
+```bash
+# Run launch file
+ros2 launch <package_name> <launch_file_name>.py
+
+# Run with arguments
+ros2 launch <package_name> <launch_file_name>.py arg_name:=arg_value
+```
+
+## Debugging and Monitoring
+
+### Visualization Tools
+
+**RViz2:**
+- 3D visualization of robot models
+- Display of sensor data (point clouds, images)
+- Robot state visualization
+- Interactive markers and controls
+
+```bash
+# Launch RViz2
+ros2 run rviz2 rviz2
+
+# Launch with configuration
+ros2 run rviz2 rviz2 -d config_file.rviz
+```
+
+**RQT:**
+- Modular GUI framework
+- Topic monitoring and plotting
+- Node graph visualization
+- Parameter reconfiguration
+
+```bash
+# Launch RQT
+ros2 run rqt_graph rqt_graph
+ros2 run rqt_plot rqt_plot
+ros2 run rqt_console rqt_console
+```
+
+### Command Line Monitoring
+
+**System Status:**
+```bash
+# Monitor topic rates
+ros2 topic hz /topic_name
+
+# Monitor bandwidth usage
+ros2 topic bw /topic_name
+
+# Monitor node activity
+ros2 node info /node_name
+
+# Monitor system resources
+ros2 doctor --report
+```
+
+**Logging:**
+```bash
+# Set log level
+ros2 run <package> <executable> --ros-args --log-level DEBUG
+
+# View log files
+ls ~/.ros/log/
+tail -f ~/.ros/log/latest/*.log
+```
+
+## Best Practices
+
+### Node Design
+
+**Single Responsibility:**
+- Each node should have one primary function
+- Keep nodes small and focused
+- Use composable node patterns when possible
+
+**Error Handling:**
+- Graceful handling of communication failures
+- Proper resource cleanup
+- Meaningful error messages and logging
+
+**Performance:**
+- Choose appropriate QoS settings
+- Minimize message size and frequency
+- Use zero-copy communication when possible
+
+### Topic Naming
+
+**Naming Conventions:**
+- Use descriptive, hierarchical names
+- Follow reverse domain name conventions
+- Include namespace for multi-robot systems
+
+```
+/robot_name/sensor_type/specific_sensor
+/example: /mobile_base/lidar/front_scanner
+/example: /manipulator_arm/camera/rgb_image
+```
+
+### Parameter Management
+
+**Parameter Files:**
+```yaml
+# config/parameters.yaml
+my_node:
+  param_name: param_value
+  nested_param:
+    sub_param: 42
+```
+
+**Loading Parameters:**
+```python
+import rclpy
+from rclpy.node import Node
+
+class MyNode(Node):
+    def __init__(self):
+        super().__init__('my_node')
+
+        # Declare parameters with defaults
+        self.declare_parameter('param_name', 'default_value')
+
+        # Load parameter value
+        param_value = self.get_parameter('param_name').value
+```
+
+## Next Steps
+
+This introduction to ROS 2 fundamentals provides the foundation for robotics development. In the next sections, we'll explore:
+
+1. **Python Implementation with rclpy**: Hands-on programming with ROS 2
+2. **URDF and Robot Modeling**: Creating virtual robot models
+3. **Advanced Communication Patterns**: Services, actions, and custom QoS
+
+By mastering these fundamentals, you'll be prepared to develop sophisticated robotics applications using the modern ROS 2 ecosystem.
