@@ -208,3 +208,10 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Active Technologies
+- MDX (Markdown + React) with JavaScript/TypeScript components + Docusaurus v3+, React components, npm build system (001-robotics-lab-guide)
+- File-based MDX content in /docs directory structure (001-robotics-lab-guide)
+
+## Recent Changes
+- 001-robotics-lab-guide: Added MDX (Markdown + React) with JavaScript/TypeScript components + Docusaurus v3+, React components, npm build system

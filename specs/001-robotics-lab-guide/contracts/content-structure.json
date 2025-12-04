@@ -1,0 +1,243 @@
+{
+  "contractName": "Content Structure Contract",
+  "version": "1.0",
+  "description": "Defines the structure and requirements for all MDX content in the Physical AI & Humanoid Robotics Lab book",
+  "lastUpdated": "2025-12-05",
+  "modules": [
+    {
+      "moduleId": "00-intro",
+      "title": "Introduction and Architecture",
+      "weeksCovered": [1],
+      "chapters": [
+        {
+          "chapterId": "welcome",
+          "title": "Welcome to the Physical AI Lab",
+          "targetWordCount": 500,
+          "contentType": "MDX",
+          "prerequisites": [],
+          "learningObjectives": [
+            "Understand the book structure and learning objectives",
+            "Identify the three core infrastructure components",
+            "Recognize the 13-week curriculum progression"
+          ]
+        },
+        {
+          "chapterId": "architecture-overview",
+          "title": "High-Level Infrastructure Architecture",
+          "targetWordCount": 1500,
+          "contentType": "MDX",
+          "prerequisites": ["welcome"],
+          "learningObjectives": [
+            "Compare On-Premise vs Cloud-Native lab approaches",
+            "Understand the Digital Twin Workstation requirements",
+            "Evaluate the Latency Trap implications for real-time applications"
+          ]
+        }
+      ]
+    },
+    {
+      "moduleId": "01-ros2",
+      "title": "Robot Operating System 2",
+      "weeksCovered": [1, 2, 3, 4, 5],
+      "chapters": [
+        {
+          "chapterId": "fundamentals",
+          "title": "ROS 2 Fundamentals: Core Concepts",
+          "targetWordCount": 1000,
+          "contentType": "MDX",
+          "prerequisites": ["architecture-overview"],
+          "learningObjectives": [
+            "Explain ROS 2 node architecture and communication patterns",
+            "Define topics, messages, services, and actions",
+            "Understand the ROS 2 DDS implementation"
+          ]
+        },
+        {
+          "chapterId": "rclpy-implementation",
+          "title": "Python Implementation with rclpy",
+          "targetWordCount": 1000,
+          "contentType": "MDX",
+          "prerequisites": ["fundamentals"],
+          "learningObjectives": [
+            "Write basic ROS 2 nodes using rclpy",
+            "Implement publisher/subscriber patterns",
+            "Create and use ROS 2 services"
+          ]
+        },
+        {
+          "chapterId": "urdf-and-robot-modeling",
+          "title": "URDF: Defining Robot Kinematics and Visuals",
+          "targetWordCount": 1500,
+          "contentType": "MDX",
+          "prerequisites": ["fundamentals"],
+          "learningObjectives": [
+            "Create URDF robot models with links and joints",
+            "Define visual and collision geometries",
+            "Implement kinematic chains for humanoid robots"
+          ]
+        }
+      ]
+    },
+    {
+      "moduleId": "02-simulation",
+      "title": "Digital Twin and Simulation",
+      "weeksCovered": [6, 7, 8, 9],
+      "chapters": [
+        {
+          "chapterId": "gazebo-setup",
+          "title": "Gazebo Classic & Ignition Setup and Bridge",
+          "targetWordCount": 1500,
+          "contentType": "MDX",
+          "prerequisites": ["urdf-and-robot-modeling"],
+          "learningObjectives": [
+            "Install and configure Gazebo simulation environments",
+            "Set up ROS 2-Gazebo integration",
+            "Configure physics parameters for realistic simulation"
+          ]
+        },
+        {
+          "chapterId": "sensor-modeling",
+          "title": "Simulating Sensors (LiDAR, IMU, Camera)",
+          "targetWordCount": 1500,
+          "contentType": "MDX",
+          "prerequisites": ["gazebo-setup"],
+          "learningObjectives": [
+            "Model common robotics sensors in Gazebo",
+            "Configure sensor parameters and noise models",
+            "Visualize sensor data in RViz2"
+          ]
+        },
+        {
+          "chapterId": "unity-visualization",
+          "title": "Advanced Visualization with Unity",
+          "targetWordCount": 1500,
+          "contentType": "MDX",
+          "prerequisites": ["sensor-modeling"],
+          "learningObjectives": [
+            "Integrate Unity with ROS 2 simulation",
+            "Create custom visualization environments",
+            "Implement physics-based rendering for realistic scenarios"
+          ]
+        }
+      ]
+    },
+    {
+      "moduleId": "03-aicontrol",
+      "title": "AI Control Systems",
+      "weeksCovered": [10, 11, 12],
+      "chapters": [
+        {
+          "chapterId": "isaac-sim-setup",
+          "title": "NVIDIA Isaac Sim: Core Environment",
+          "targetWordCount": 1000,
+          "contentType": "MDX",
+          "prerequisites": ["unity-visualization"],
+          "learningObjectives": [
+            "Install and configure Isaac Sim development environment",
+            "Set up Omniverse Launcher and Python APIs",
+            "Create basic simulation scenarios"
+          ]
+        },
+        {
+          "chapterId": "sim-to-real-transfer",
+          "title": "Sim-to-Real Transfer Techniques",
+          "targetWordCount": 1500,
+          "contentType": "MDX",
+          "prerequisites": ["isaac-sim-setup"],
+          "learningObjectives": [
+            "Understand domain randomization for robust training",
+            "Implement calibration procedures for real robots",
+            "Apply transfer learning from simulation to hardware"
+          ]
+        },
+        {
+          "chapterId": "humanoid-kinematics",
+          "title": "Humanoid Kinematics and Bipedal Locomotion",
+          "targetWordCount": 1000,
+          "contentType": "MDX",
+          "prerequisites": ["sim-to-real-transfer"],
+          "learningObjectives": [
+            "Calculate forward and inverse kinematics for humanoid robots",
+            "Implement basic bipedal locomotion patterns",
+            "Design control loops for stable walking"
+          ]
+        }
+      ]
+    },
+    {
+      "moduleId": "04-capstone",
+      "title": "VLA and Integration",
+      "weeksCovered": [13],
+      "chapters": [
+        {
+          "chapterId": "vla-conversational-ai",
+          "title": "Vision-Language-Action (VLA) Architecture",
+          "targetWordCount": 1000,
+          "contentType": "MDX",
+          "prerequisites": ["humanoid-kinematics"],
+          "learningObjectives": [
+            "Integrate LLMs for high-level command interpretation",
+            "Implement Whisper for speech recognition",
+            "Create vision-language-action pipelines"
+          ]
+        },
+        {
+          "chapterId": "final-project-breakdown",
+          "title": "Capstone Project: Full Stack Integration",
+          "targetWordCount": 1000,
+          "contentType": "MDX",
+          "prerequisites": ["vla-conversational-ai"],
+          "learningObjectives": [
+            "Assemble all modules into integrated humanoid system",
+            "Implement end-to-end workflows from perception to action",
+            "Validate system performance against curriculum objectives"
+          ]
+        }
+      ]
+    },
+    {
+      "moduleId": "99-hardware",
+      "title": "Hardware Procurement and Specifications",
+      "weeksCovered": [],
+      "chapters": [
+        {
+          "chapterId": "workstation-spec",
+          "title": "Workstation & Edge Kit Requirements",
+          "targetWordCount": 500,
+          "contentType": "MDX",
+          "prerequisites": [],
+          "learningObjectives": [
+            "Select appropriate RTX GPU configurations",
+            "Specify RAM and storage requirements",
+            "Choose Jetson Orin edge computing solutions"
+          ]
+        },
+        {
+          "chapterId": "procurement-tables",
+          "title": "Lab Procurement & Cost Analysis",
+          "targetWordCount": 1500,
+          "contentType": "MDX",
+          "prerequisites": ["workstation-spec"],
+          "learningObjectives": [
+            "Analyze CapEx vs OpEx for different deployment models",
+            "Create detailed bill of materials for lab setup",
+            "Evaluate vendor options and pricing structures"
+          ]
+        }
+      ]
+    }
+  ],
+  "validationRules": {
+    "wordCountTolerance": 0.1,
+    "requiredFrontmatterFields": ["title", "description", "sidebar_label", "slug"],
+    "maxCodeExampleLength": 50,
+    "minLearningObjectives": 3,
+    "maxLearningObjectives": 7
+  },
+  "qualityStandards": {
+    "readabilityLevel": "Grade 10-12",
+    "technicalAccuracy": "Must be validated against official documentation",
+    "codeExamples": "Must be tested and functional",
+    "crossReferences": "Must be accurate and up-to-date"
+  }
+}
