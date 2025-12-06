@@ -16,8 +16,12 @@ const config: Config = {
   organizationName: 'hasanrafay',
   projectName: 'humanoid-robotics-textbook',
 
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'warn',
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
 
   // Even if you don't use internationalization, you can still use
   // this field to set useful metadata like html lang. For example, if
@@ -112,12 +116,8 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
-            },
-            {
               label: 'GitHub',
-              href: 'https://github.com/hasanrafay/humanoid-robotics-textbook',
+              href: 'https://github.com/Hasan9060/Hackathon_Physical-AI-Humanoid-Robotics--Public',
             },
           ],
         },
