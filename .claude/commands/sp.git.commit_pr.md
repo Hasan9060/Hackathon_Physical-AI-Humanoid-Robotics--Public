@@ -122,6 +122,8 @@ Generate a name that's:
 
 Examples:
 - `add-auth-validation` (from "Add login validation" + auth-related files)
+- `setup-betterauth` (from BetterAuth authentication setup)
+- `integrate-auth-navbar` (from auth integration in Docusaurus navbar)
 - `fix-query-timeout` (from files in db/queries/)
 - `docs-update-readme` (from README.md changes)
 

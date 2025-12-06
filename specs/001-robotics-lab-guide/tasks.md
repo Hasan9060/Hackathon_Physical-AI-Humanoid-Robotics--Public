@@ -44,10 +44,10 @@ description: "Task list for feature implementation - Physical AI & Humanoid Robo
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T008 Configure core Docusaurus settings in docusaurus.config.js
+- [x] T008 Configure core Docusaurus settings in docusaurus.config.js
 - [ ] T009 [P] Set up MDX compilation and plugin configuration
-- [ ] T010 [P] Configure sidebar auto-generation from file structure
-- [ ] T011 Create base layout templates and theme customization
+- [x] T010 [P] Configure sidebar auto-generation from file structure
+- [x] T011 Create base layout templates and theme customization
 - [ ] T012 [P] Set up build and deployment scripts
 - [ ] T013 Configure GitHub Actions for automated deployment
 - [ ] T014 [P] Implement frontmatter validation for content quality
@@ -154,10 +154,10 @@ description: "Task list for feature implementation - Physical AI & Humanoid Robo
 - [ ] T056 [P] Add reading time calculations for all chapters
 - [ ] T057 [P] Create printable versions of procurement tables
 - [ ] T058 [P] Add bookmarking and note-taking functionality
-- [ ] T059 [P] Implement responsive design optimizations
+- [x] T059 [P] Implement responsive design optimizations
 - [ ] T060 [P] Add accessibility features (ARIA labels, keyboard navigation)
 - [ ] T061 [P] Create progress tracking and completion certificates
-- [ ] T062 [P] Add dark mode and theme switching
+- [x] T062 [P] Add dark mode and theme switching
 
 ---
 

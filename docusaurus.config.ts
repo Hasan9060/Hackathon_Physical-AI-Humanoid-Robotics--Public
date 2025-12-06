@@ -1,5 +1,5 @@
-import type {Config} from '@docusaurus/types';
-import type {Options as ThemeConfig} from '@docusaurus/preset-classic';
+import type { Config } from '@docusaurus/types';
+import type { Options as ThemeConfig } from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Physical AI & Humanoid Robotics Lab',
@@ -27,6 +27,10 @@ const config: Config = {
     locales: ['en'],
   },
 
+  customFields: {
+    apiUrl: process.env.API_URL || 'http://localhost:8000',
+  },
+
   presets: [
     [
       'classic',
@@ -52,11 +56,21 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Curriculum',
+          label: 'Docs',
+          docsPluginId: 'tutorial',
         },
         {
-          href: 'https://github.com/hasanrafay/humanoid-robotics-textbook',
+          to: '/author',
+          label: 'Author',
+          position: 'right',
+        },
+        {
+          href: 'https://github.com/Hasan9060',
           label: 'GitHub',
+          position: 'right',
+        },
+        {
+          type: 'custom-auth',
           position: 'right',
         },
       ],
@@ -108,28 +122,21 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date()} Hasan Rafay. Built with Docusaurus.`,
+      copyright: `Copyright © 2025 Hasan Rafay. Built with Docusaurus.`,
+    },
+    colorMode: {
+      defaultMode: 'dark',
+      disableSwitch: false,
+      respectPrefersColorScheme: true,
+    },
+    docs: {
+      sidebar: {
+        hideable: true,
+      },
     },
     prism: {
-      theme: {
-        plain: {
-          backgroundColor: '#f6f8fa',
-          color: '#24292e',
-        },
-        styles: [
-          {
-            style: 'stackoverflow-light',
-            lineNumber: {
-              backgroundColor: '#f6f8fa',
-              color: '#6a737d',
-            },
-            gutter: {
-              backgroundColor: '#f6f8fa',
-              color: '#6a737d',
-            },
-          },
-        ],
-      },
+      theme: require('prism-react-renderer').themes.github,
+      darkTheme: require('prism-react-renderer').themes.dracula,
     },
   } satisfies ThemeConfig,
 

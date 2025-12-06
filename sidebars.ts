@@ -1,28 +1,18 @@
-import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     {
       type: 'doc',
-      id: 'welcome',
-      label: 'Welcome to the Physical AI Lab',
-    },
-    {
-      type: 'doc',
-      id: 'architecture-overview',
-      label: 'High-Level Infrastructure Architecture',
+      id: 'intro/overview',
+      label: 'Physical AI Lab Overview',
     },
     {
       type: 'category',
       label: 'Module 1: Introduction & Architecture',
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
-        {
-          type: 'doc',
-          id: 'intro/welcome',
-          label: 'Welcome to the Physical AI Lab',
-        },
         {
           type: 'doc',
           id: 'intro/architecture-overview',
@@ -39,7 +29,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Module 2: ROS 2 Fundamentals',
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'doc',
@@ -62,7 +52,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Module 3: Simulation & Digital Twin',
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'doc',
@@ -85,7 +75,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Module 4: AI Control Systems',
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'doc',
@@ -106,27 +96,9 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Module 5: VLA & Capstone',
-      collapsible: true,
-      collapsed: false,
-      items: [
-        {
-          type: 'doc',
-          id: 'capstone/vla-conversational-ai',
-          label: 'Vision-Language-Action (VLA) Architecture',
-        },
-        {
-          type: 'doc',
-          id: 'capstone/final-project-breakdown',
-          label: 'Capstone Project: Full Stack Integration',
-        },
-      ],
-    },
-    {
-      type: 'category',
       label: 'Hardware Procurement',
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: [
         {
           type: 'doc',

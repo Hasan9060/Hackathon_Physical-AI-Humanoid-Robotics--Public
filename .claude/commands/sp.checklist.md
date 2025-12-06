@@ -262,6 +262,19 @@ Sample items:
 - "Are security requirements consistent with compliance obligations? [Consistency]"
 - "Are security failure/breach response requirements defined? [Gap, Exception Flow]"
 
+**Authentication Requirements Quality:** `auth.md`
+
+Sample items:
+
+- "Are BetterAuth provider configurations fully specified with all required parameters? [Completeness]"
+- "Are session management requirements defined (expiration, renewal, invalidation)? [Coverage]"
+- "Are password policy requirements quantified with specific criteria? [Clarity]"
+- "Are authentication error states and user feedback requirements documented? [Completeness]"
+- "Are CORS and security headers requirements specified for frontend-backend communication? [Gap]"
+- "Are user registration requirements (email verification, approval flows) clearly defined? [Clarity]"
+- "Are authentication UI requirements consistent across all application components? [Consistency]"
+- "Are accessibility requirements specified for authentication forms and workflows? [Coverage]"
+
 ## Anti-Examples: What NOT To Do
 
 **❌ WRONG - These test implementation, not requirements:**

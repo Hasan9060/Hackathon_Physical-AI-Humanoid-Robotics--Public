@@ -1,18 +1,560 @@
 .custom404 {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at center, var(--ifm-background-surface-color) 0%, var(--ifm-background-color) 100%);
 }
 
+/* Robot Animation */
+.robot404 {
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+.robotAnimation {
+  position: relative;
+  animation: float 3s ease-in-out infinite;
+}
+
+.robotHead {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-primary-dark));
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.robotEye {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 25px;
+  animation: blink 4s infinite;
+}
+
+.robotEye:first-child {
+  left: 20px;
+}
+
+.robotEye:last-child {
+  right: 20px;
+}
+
+.robotMouth {
+  font-size: 1.5rem;
+  margin-top: 5px;
+  animation: confused 2s ease-in-out infinite;
+}
+
+.robotBody {
+  width: 140px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--ifm-color-primary-light), var(--ifm-color-primary));
+  border-radius: 20px;
+  margin: 0 auto 1rem;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.robotChest {
+  background: rgba(255, 255, 255, 0.9);
+  width: 60px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--ifm-color-primary);
+}
+
+.robotArm {
+  position: absolute;
+  font-size: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.leftArm {
+  left: -25px;
+  animation: armWaveLeft 2s ease-in-out infinite;
+}
+
+.rightArm {
+  right: -25px;
+  animation: armWaveRight 2s ease-in-out infinite 0.5s;
+}
+
+.robotLegs {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.robotLeg {
+  width: 20px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--ifm-color-primary-dark), var(--ifm-color-primary-darker));
+  border-radius: 10px;
+  animation: legMove 1.5s ease-in-out infinite alternate;
+}
+
+.leftLeg {
+  animation-delay: 0.2s;
+}
+
+.rightLeg {
+  animation-delay: 0.6s;
+}
+
+/* Content Styles */
+.content {
+  max-width: 600px;
+  z-index: 10;
+  position: relative;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, var(--ifm-color-primary-dark), var(--ifm-color-primary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: slideInFromRight 0.8s ease-out;
+  font-family: var(--ifm-heading-font-family);
+}
+
+.description {
+  font-size: 1.25rem;
+  color: var(--ifm-color-content);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  animation: slideInFromRight 0.8s ease-out 0.2s backwards;
+}
+
+.subDescription {
+  font-size: 1.1rem;
+  color: var(--ifm-color-content-secondary);
+  margin-bottom: 2.5rem;
+  line-height: 1.5;
+  animation: slideInFromRight 0.8s ease-out 0.3s backwards;
+}
+
+.subDescription strong {
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+}
+
+/* Suggestions Section */
+.suggestions {
+  margin-bottom: 3rem;
+  animation: slideInFromRight 0.8s ease-out 0.4s backwards;
+}
+
+.suggestions h3 {
+  font-size: 1.5rem;
+  color: var(--ifm-color-content);
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.suggestionLinks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.suggestionLink {
+  display: flex;
+  align-items: center;
+  padding: 1.2rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.suggestionLink::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--ifm-color-primary);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.suggestionLink:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+  border-color: var(--ifm-color-primary);
+}
+
+.suggestionLink:hover::before {
+  transform: translateX(0);
+}
+
+.linkIcon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.linkContent {
+  text-align: left;
+  flex: 1;
+}
+
+.linkTitle {
+  display: block;
+  font-weight: 600;
+  color: var(--ifm-color-content);
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+.linkDesc {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--ifm-color-content-secondary);
+  line-height: 1.3;
+}
+
+/* Action Buttons */
 .actions {
-  margin-top: 2rem;
   display: flex;
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+  animation: slideInFromRight 0.8s ease-out 0.5s backwards;
 }
 
-@media screen and (max-width: 766px) {
+.primaryButton,
+.secondaryButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-primary-dark));
+  color: white;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.4);
+}
+
+.secondaryButton {
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-content);
+  border: 2px solid var(--ifm-color-emphasis-200);
+}
+
+.secondaryButton:hover {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+  transform: translateY(-2px);
+}
+
+/* Floating Elements */
+.floatingElements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.gear,
+.circuit1,
+.circuit2,
+.circuit3,
+.circuit4 {
+  position: absolute;
+  font-size: 1.5rem;
+  opacity: 0.6;
+}
+
+.gear {
+  animation: spin 10s linear infinite;
+}
+
+.gear1 {
+  top: 10%;
+  left: 10%;
+  font-size: 2rem;
+}
+
+.gear2 {
+  top: 20%;
+  right: 15%;
+  font-size: 1.5rem;
+  animation-duration: 8s;
+  animation-direction: reverse;
+}
+
+.gear3 {
+  bottom: 20%;
+  left: 20%;
+  font-size: 1.8rem;
+  animation-duration: 12s;
+}
+
+.circuit1 {
+  top: 30%;
+  right: 25%;
+  animation: float 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.circuit2 {
+  bottom: 30%;
+  right: 30%;
+  animation: float 4s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.circuit3 {
+  top: 60%;
+  left: 15%;
+  animation: float 4s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.circuit4 {
+  bottom: 40%;
+  left: 25%;
+  animation: float 4s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes confused {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+@keyframes armWaveLeft {
+  0%, 100% { transform: translateY(-50%) rotate(0deg); }
+  50% { transform: translateY(-50%) rotate(-20deg); }
+}
+
+@keyframes armWaveRight {
+  0%, 100% { transform: translateY(-50%) rotate(0deg); }
+  50% { transform: translateY(-50%) rotate(20deg); }
+}
+
+@keyframes legMove {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-5px); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .custom404 {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .description {
+    font-size: 1.1rem;
+  }
+
+  .subDescription {
+    font-size: 1rem;
+  }
+
+  .robotHead {
+    width: 60px;
+    height: 60px;
+  }
+
+  .robotBody {
+    width: 100px;
+    height: 70px;
+  }
+
+  .suggestionLinks {
+    grid-template-columns: 1fr;
+  }
+
   .actions {
     flex-direction: column;
     align-items: center;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+    max-width: 300px;
+    justify-content: center;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .title {
+    font-size: 1.8rem;
+  }
+
+  .robotHead {
+    width: 50px;
+    height: 50px;
+  }
+
+  .robotEye {
+    width: 10px;
+    height: 10px;
+    top: 20px;
+  }
+
+  .robotEye:first-child {
+    left: 15px;
+  }
+
+  .robotEye:last-child {
+    right: 15px;
+  }
+
+  .robotBody {
+    width: 80px;
+    height: 60px;
+  }
+
+  .suggestionLink {
+    padding: 1rem;
+  }
+
+  .gear,
+  .circuit1,
+  .circuit2,
+  .circuit3,
+  .circuit4 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Dark Mode Adjustments */
+[data-theme='dark'] .custom404 {
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+}
+
+[data-theme='dark'] .robotHead {
+  box-shadow: 0 8px 32px rgba(96, 165, 250, 0.3);
+}
+
+[data-theme='dark'] .robotBody {
+  box-shadow: 0 8px 32px rgba(96, 165, 250, 0.2);
+}
+
+[data-theme='dark'] .suggestionLink {
+  background: #1e293b;
+  border-color: var(--ifm-color-emphasis-200);
+}
+
+[data-theme='dark'] .suggestionLink:hover {
+  box-shadow: 0 8px 24px rgba(96, 165, 250, 0.15);
+}
+
+[data-theme='dark'] .secondaryButton {
+  background: #1e293b;
+  border-color: var(--ifm-color-emphasis-300);
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .suggestionLink {
+    border-width: 2px;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .robotAnimation,
+  .gear,
+  .circuit1,
+  .circuit2,
+  .circuit3,
+  .circuit4 {
+    animation: none;
+  }
+
+  .suggestionLink:hover,
+  .primaryButton:hover,
+  .secondaryButton:hover {
+    transform: none;
   }
 }

@@ -10,32 +10,35 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: '13-Week Curriculum',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: 'Spec-Driven Development',
+    Svg: require('@site/static/img/spec-driven-icon.svg').default,
     description: (
       <>
-        Comprehensive 13-week curriculum covering ROS 2, simulation, AI control,
-        and VLA integration for humanoid robotics education.
+        Transform requirements into precise specifications with automated
+        documentation, ensuring consistency between planning and implementation.
+        Generate PHRs and ADRs automatically during development.
       </>
     ),
   },
   {
-    title: 'Hardware Specifications',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: 'Automated Implementation',
+    Svg: require('@site/static/img/implementation-icon.svg').default,
     description: (
       <>
-        Detailed procurement guides for Digital Twin Workstations, Edge AI Kits,
-        and Robot Lab configurations with cost analysis.
+        Execute tasks directly from specifications with intelligent task routing,
+        ensuring every implementation matches the documented requirements.
+        Built-in validation and testing at every step.
       </>
     ),
   },
   {
-    title: 'Technical Architecture',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    title: 'Architecture Blueprint',
+    Svg: require('@site/static/img/architecture-icon.svg').default,
     description: (
       <>
-        Complete system architecture documentation with Sim-to-Real transfer
-        workflows and integration patterns.
+        Visual architecture design with layer-based structure. From hardware
+        specifications to software patterns, build robust systems that scale.
+        Document decisions with comprehensive ADR tracking.
       </>
     ),
   },

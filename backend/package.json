@@ -1,0 +1,23 @@
+{
+  "name": "humanoid-robotics-auth-backend",
+  "version": "1.0.0",
+  "description": "Authentication backend for Humanoid Robotics Textbook",
+  "main": "dist/auth.js",
+  "scripts": {
+    "dev": "tsx watch src/auth.ts",
+    "build": "tsc",
+    "start": "node dist/auth.js"
+  },
+  "dependencies": {
+    "better-auth": "^1.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}
