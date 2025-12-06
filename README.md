@@ -1,15 +1,39 @@
-# Physical AI & Humanoid Robotics Lab Book
+# 🤖 Physical AI & Humanoid Robotics Lab Guide
 
-A comprehensive 14,000-word technical guide for academic institutions planning and implementing Physical AI & Humanoid Robotics labs.
+[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Overview
+A comprehensive technical architecture and procurement guide for setting up Physical AI & Humanoid Robotics curriculum infrastructure.
 
-This book provides detailed technical architecture and procurement guidance for setting up a "Physical AI & Humanoid Robotics" curriculum. It covers:
+## 📚 Overview
 
-- **13-week curriculum structure** with dedicated chapters for each technical module
-- **Three core infrastructure components**: Digital Twin Workstation, Edge AI Kit, Robot Lab
-- **On-Premise vs Cloud-Native analysis** with detailed cost justification
-- **Sim-to-Real transfer concepts** and hardware dependencies
+This guide provides detailed instructions for establishing a robotics lab focusing on:
+- **ROS 2** integration and development
+- **NVIDIA Isaac Sim** simulation environments
+- **VLA (Vision-Language-Action)** model implementation
+- **Humanoid robotics** development workflows
+- **Edge AI** deployment with Jetson Orin
+
+## 🚀 Deployment on Hugging Face Spaces
+
+### Static Site Deployment
+
+This repository is configured for static deployment on Hugging Face Spaces:
+
+1. **Create a new Space**:
+   ```bash
+   # Visit https://huggingface.co/new-space
+   # Choose: Static HTML
+   # Space name: humanoid-robotics-lab
+   ```
+
+2. **Upload files**:
+   - Push this repository to your Space
+   - The built Docusaurus site in `/build` will be served
+
+3. **Automatic redirects**:
+   - Root path redirects to `/docs/`
+   - Full documentation navigation available
 
 ## Quick Start
 
