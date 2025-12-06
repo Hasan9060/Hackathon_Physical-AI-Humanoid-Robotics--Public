@@ -1,14 +1,9 @@
 {
   "build": {
-    "builder": "NIXPACKS",
-    "nixpacksPlan": {
-      "providers": {
-        "node": "20"
-      }
-    }
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "npm run build && npm run serve",
+    "startCommand": "npm run serve",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE"
