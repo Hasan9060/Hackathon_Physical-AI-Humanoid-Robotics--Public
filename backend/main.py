@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, model_validator
 from typing import List, Optional, Dict
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
@@ -17,6 +18,7 @@ from sqlalchemy.orm import Session
 from database.db import get_db, init_db
 from database.models import User
 from services.auth_service import AuthService
+from services.phr_service import PHRService, Stage
 import datetime
 import traceback
 
@@ -101,6 +103,30 @@ class QueryRequest(BaseModel):
     question: str
     max_results: Optional[int] = 5
     selected_text: Optional[str] = None
+
+class PHRCreateRequest(BaseModel):
+    title: str
+    stage: str  # constitution, spec, plan, tasks, red, green, refactor, explainer, misc, general
+    prompt_text: str
+    response_text: str
+    surface: Optional[str] = "agent"
+    model: Optional[str] = "claude-3-opus"
+    feature: Optional[str] = "none"
+    branch: Optional[str] = "main"
+    user: Optional[str] = "user"
+    command: Optional[str] = ""
+    labels: Optional[List[str]] = []
+    links: Optional[Dict[str, str]] = {}
+    files_yaml: Optional[List[str]] = []
+    tests_yaml: Optional[List[str]] = []
+    outcome: Optional[str] = None
+    evaluation: Optional[str] = None
+
+class PHRSearchRequest(BaseModel):
+    query: str
+    stage: Optional[str] = None
+    feature: Optional[str] = None
+    limit: Optional[int] = 50
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     payload = AuthService.decode_token(token)
@@ -330,6 +356,380 @@ Please provide a detailed answer based on the context above."""
     except Exception as e:
         error_msg = f"[ERROR] Query error: {e}\n"
         print(error_msg)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# PHR Endpoints
+@app.post("/phr/create")
+async def create_phr(request: PHRCreateRequest, current_user: User = Depends(get_current_user)):
+    """Create a new Prompt History Record"""
+    try:
+        # Validate stage
+        try:
+            stage = Stage(request.stage.lower())
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid stage: {request.stage}")
+
+        # Initialize PHR service
+        phr_service = PHRService()
+
+        # Create PHR
+        file_path = phr_service.create_phr(
+            title=request.title,
+            stage=stage,
+            prompt_text=request.prompt_text,
+            response_text=request.response_text,
+            surface=request.surface,
+            model=request.model,
+            feature=request.feature,
+            branch=request.branch,
+            user=current_user.email,
+            command=request.command,
+            labels=request.labels,
+            links=request.links,
+            files_yaml=request.files_yaml,
+            tests_yaml=request.tests_yaml,
+            outcome=request.outcome,
+            evaluation=request.evaluation
+        )
+
+        return {
+            "message": "PHR created successfully",
+            "file_path": file_path,
+            "stage": stage.value,
+            "title": request.title
+        }
+
+    except Exception as e:
+        print(f"[ERROR] PHR creation error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/phr/list")
+async def list_phrs(
+    stage: Optional[str] = None,
+    feature: Optional[str] = None,
+    limit: Optional[int] = 50,
+    current_user: User = Depends(get_current_user)
+):
+    """List Prompt History Records with optional filtering"""
+    try:
+        phr_service = PHRService()
+
+        # Convert stage string to enum if provided
+        stage_enum = None
+        if stage:
+            try:
+                stage_enum = Stage(stage.lower())
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid stage: {stage}")
+
+        phrs = phr_service.list_phrs(stage=stage_enum, feature=feature, limit=limit)
+
+        return {
+            "phrs": phrs,
+            "count": len(phrs),
+            "stage_filter": stage,
+            "feature_filter": feature
+        }
+
+    except Exception as e:
+        print(f"[ERROR] PHR list error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/phr/search")
+async def search_phrs(
+    request: PHRSearchRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Search Prompt History Records by content"""
+    try:
+        phr_service = PHRService()
+
+        # Convert stage string to enum if provided
+        stage_enum = None
+        if request.stage:
+            try:
+                stage_enum = Stage(request.stage.lower())
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid stage: {request.stage}")
+
+        results = phr_service.search_phrs(
+            query=request.query,
+            stage=stage_enum,
+            feature=request.feature
+        )
+
+        return {
+            "query": request.query,
+            "results": results,
+            "count": len(results)
+        }
+
+    except Exception as e:
+        print(f"[ERROR] PHR search error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/phr/{file_path:path}")
+async def get_phr(file_path: str, current_user: User = Depends(get_current_user)):
+    """Get a specific PHR by file path"""
+    try:
+        phr_service = PHRService()
+        phr = phr_service.load_phr(file_path)
+
+        if not phr:
+            raise HTTPException(status_code=404, detail="PHR not found")
+
+        return {
+            "metadata": {
+                "id": phr.metadata.id,
+                "title": phr.metadata.title,
+                "stage": phr.metadata.stage.value,
+                "date_iso": phr.metadata.date_iso,
+                "surface": phr.metadata.surface,
+                "model": phr.metadata.model,
+                "feature": phr.metadata.feature,
+                "branch": phr.metadata.branch,
+                "user": phr.metadata.user,
+                "command": phr.metadata.command,
+                "labels": phr.metadata.labels,
+                "links": phr.metadata.links,
+                "files_yaml": phr.metadata.files_yaml,
+                "tests_yaml": phr.metadata.tests_yaml
+            },
+            "content": {
+                "prompt_text": phr.content.prompt_text,
+                "response_text": phr.content.response_text,
+                "outcome": phr.content.outcome,
+                "evaluation": phr.content.evaluation
+            }
+        }
+
+    except Exception as e:
+        print(f"[ERROR] PHR get error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Specs Endpoints
+@app.get("/specs")
+async def get_specs(current_user: User = Depends(get_current_user)):
+    """Get all available specs"""
+    try:
+        specs_dir = Path(__file__).parent.parent / "specs"
+        specs = []
+
+        if specs_dir.exists():
+            for spec_dir in specs_dir.iterdir():
+                if spec_dir.is_dir():
+                    spec_files = {}
+                    # Look for spec.md, plan.md, tasks.md
+                    for file_name in ["spec.md", "plan.md", "tasks.md", "research.md", "data-model.md", "quickstart.md"]:
+                        file_path = spec_dir / file_name
+                        if file_path.exists():
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                spec_files[file_name] = f.read()
+
+                    if spec_files:  # Only add if we found files
+                        specs.append({
+                            "id": spec_dir.name,
+                            "name": spec_dir.name.replace("-", " ").title(),
+                            "files": spec_files
+                        })
+
+        return {
+            "specs": specs,
+            "count": len(specs)
+        }
+
+    except Exception as e:
+        print(f"[ERROR] Specs get error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/specs/{spec_id}")
+async def get_spec(spec_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific spec by ID"""
+    try:
+        spec_dir = Path(__file__).parent.parent / "specs" / spec_id
+
+        if not spec_dir.exists():
+            raise HTTPException(status_code=404, detail="Spec not found")
+
+        spec_files = {}
+        for file_name in ["spec.md", "plan.md", "tasks.md", "research.md", "data-model.md", "quickstart.md"]:
+            file_path = spec_dir / file_name
+            if file_path.exists():
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    spec_files[file_name] = f.read()
+
+        return {
+            "id": spec_id,
+            "name": spec_id.replace("-", " ").title(),
+            "files": spec_files
+        }
+
+    except Exception as e:
+        print(f"[ERROR] Spec get error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Website Content Endpoints
+@app.get("/content/docs/{file_path:path}")
+async def get_doc_content(file_path: str, current_user: User = Depends(get_current_user)):
+    """Get documentation content"""
+    try:
+        doc_path = Path(__file__).parent.parent / "docs" / file_path
+
+        # Ensure the path doesn't go outside docs directory
+        doc_path = doc_path.resolve()
+        docs_root = Path(__file__).parent.parent / "docs"
+        if not str(doc_path).startswith(str(docs_root.resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if not doc_path.exists():
+            raise HTTPException(status_code=404, detail="Documentation file not found")
+
+        # Read the file content
+        with open(doc_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        return {
+            "path": file_path,
+            "content": content,
+            "type": "markdown" if file_path.endswith('.md') or file_path.endswith('.mdx') else "text"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Doc content error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/content/docs")
+async def list_docs(current_user: User = Depends(get_current_user)):
+    """List all documentation files"""
+    try:
+        docs_path = Path(__file__).parent.parent / "docs"
+        files = []
+
+        if docs_path.exists():
+            for file_path in docs_path.rglob("*.md"):
+                relative_path = file_path.relative_to(docs_path)
+                files.append(str(relative_path))
+
+        return {
+            "files": sorted(files),
+            "count": len(files)
+        }
+
+    except Exception as e:
+        print(f"[ERROR] Docs list error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/content/components/{component_path:path}")
+async def get_component_content(component_path: str, current_user: User = Depends(get_current_user)):
+    """Get React component content"""
+    try:
+        comp_path = Path(__file__).parent.parent / "src" / "components" / component_path
+
+        # Ensure the path doesn't go outside components directory
+        comp_path = comp_path.resolve()
+        comp_root = Path(__file__).parent.parent / "src" / "components"
+        if not str(comp_path).startswith(str(comp_root.resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if not comp_path.exists():
+            raise HTTPException(status_code=404, detail="Component file not found")
+
+        # Read the file content
+        with open(comp_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        return {
+            "path": component_path,
+            "content": content,
+            "type": "react" if component_path.endswith('.tsx') or component_path.endswith('.jsx') else "text"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Component content error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/content/static/{file_path:path}")
+async def get_static_file(file_path: str, current_user: User = Depends(get_current_user)):
+    """Get static file content"""
+    try:
+        static_path = Path(__file__).parent.parent / "static" / file_path
+
+        # Ensure the path doesn't go outside static directory
+        static_path = static_path.resolve()
+        static_root = Path(__file__).parent.parent / "static"
+        if not str(static_path).startswith(str(static_root.resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if not static_path.exists():
+            raise HTTPException(status_code=404, detail="Static file not found")
+
+        # Check if it's an image
+        image_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp']
+        if any(file_path.lower().endswith(ext) for ext in image_extensions):
+            # For images, we'll return base64 encoded content
+            import base64
+            with open(static_path, 'rb') as f:
+                image_data = f.read()
+                encoded = base64.b64encode(image_data).decode('utf-8')
+
+            return {
+                "path": file_path,
+                "content": encoded,
+                "type": "image",
+                "encoding": "base64"
+            }
+        else:
+            # For text files
+            with open(static_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            return {
+                "path": file_path,
+                "content": content,
+                "type": "static"
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Static file error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/content/static")
+async def list_static_files(current_user: User = Depends(get_current_user)):
+    """List all static files"""
+    try:
+        static_path = Path(__file__).parent.parent / "static"
+        files = []
+
+        if static_path.exists():
+            for file_path in static_path.rglob("*"):
+                if file_path.is_file():
+                    relative_path = file_path.relative_to(static_path)
+                    files.append(str(relative_path))
+
+        return {
+            "files": sorted(files),
+            "count": len(files)
+        }
+
+    except Exception as e:
+        print(f"[ERROR] Static files list error: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 

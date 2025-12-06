@@ -1,0 +1,1310 @@
+---
+title: Unity Integration and Visualization
+description: Advanced visualization using Unity Engine with ROS 2 integration
+sidebar_label: Unity Visualization
+---
+
+# Unity Integration and Visualization
+
+This module provides comprehensive coverage of Unity Engine integration with ROS 2 for advanced robotics visualization. You'll learn to create high-fidelity visualizations, interactive simulation environments, and VR/AR interfaces for robotics applications.
+
+## Introduction to Unity-ROS Integration
+
+### Why Unity for Robotics Visualization?
+
+Unity Engine offers significant advantages for robotics simulation and visualization:
+
+**Advanced Rendering Capabilities:**
+- Physically-based rendering (PBR) materials
+- Real-time lighting and shadows
+- Global illumination and ambient occlusion
+- Post-processing effects and shaders
+
+**Interactive Development Platform:**
+- Visual editor for rapid prototyping
+- Asset management and pipeline
+- Scripting with C# and Visual scripting
+- Cross-platform deployment (Windows, Linux, macOS, VR/AR)
+
+**Professional Visualization:**
+- Cinematic quality graphics
+- Custom shaders and materials
+- Particle systems and VFX
+- Audio integration and spatial sound
+
+### Unity-ROS Architecture
+
+**Integration Components:**
+- **ROS-TCP-Connector**: Bridge between Unity and ROS 2
+- **Unity Robotics Hub**: Official ROS 2 integration package
+- **URDF Importer**: Convert URDF models to Unity prefabs
+- **TF2 Integration**: Real-time transform broadcasting
+
+## Unity Setup for Robotics
+
+### Installing Unity and Required Packages
+
+**Unity Hub Installation:**
+```bash
+# Download Unity Hub
+wget https://hub.unity3d.com/linux/UnityHub.AppImage -O UnityHub.AppImage
+chmod +x UnityHub.AppImage
+./UnityHub.AppImage
+```
+
+**Required Unity Versions:**
+- Unity 2022.3 LTS or newer
+- Unity Robotics Hub package
+- ROS-TCP-Connector package
+
+**Unity Package Installation:**
+1. Open Unity Hub and create a new project
+2. Open Package Manager (Window > Package Manager)
+3. Install Unity Robotics Hub from Unity Registry
+4. Install ROS-TCP-Connector
+
+### Unity Robotics Hub Configuration
+
+**Project Setup:**
+```csharp
+// File: Assets/Scripts/RoboticsSetup.cs
+using UnityEngine;
+using Unity.Robotics.ROSTCPConnector;
+using Unity.Robotics.ROSTCPConnector.ROSGeometry;
+
+public class RoboticsSetup : MonoBehaviour
+{
+    void Start()
+    {
+        // Initialize ROS connection
+        ROSConnection.instance.Subscribe<PoseStamped>("unity/pose", PoseCallback);
+
+        // Set up robot model import
+        ImportRobotModel();
+
+        // Initialize simulation environment
+        SetupSimulationEnvironment();
+    }
+
+    void PoseCallback(PoseStamped pose)
+    {
+        // Handle pose updates from ROS
+        UpdateRobotPosition(pose);
+    }
+
+    void ImportRobotModel()
+    {
+        // Import URDF model using Robotics Hub
+        string urdfPath = "path/to/robot.urdf";
+        var importer = GetComponent<URDFImporter>();
+        if (importer != null)
+        {
+            importer.Import(urdfPath);
+        }
+    }
+
+    void SetupSimulationEnvironment()
+    {
+        // Configure physics, lighting, and rendering
+        Physics.defaultSolverIterations = 10;
+        Physics.defaultSolverVelocityIterations = 1;
+
+        // Set up realistic lighting
+        SetupLighting();
+
+        // Configure rendering settings
+        SetupRendering();
+    }
+
+    void SetupLighting()
+    {
+        // Directional light for sun simulation
+        var sunLight = GameObject.Find("Directional Light")?.GetComponent<Light>();
+        if (sunLight != null)
+        {
+            sunLight.color = new Color(1.0f, 0.956f, 0.839f, 1.0f);
+            sunLight.intensity = 1.2f;
+            sunLight.shadows = LightShadows.Soft;
+        }
+
+        // Environmental lighting
+        RenderSettings.ambientMode = AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.212f, 0.227f, 0.259f, 1.0f);
+        RenderSettings.ambientEquatorColor = new Color(0.114f, 0.125f, 0.133f, 1.0f);
+        RenderSettings.ambientGroundColor = new Color(0.047f, 0.043f, 0.035f, 1.0f);
+    }
+
+    void SetupRendering()
+    {
+        // Enable post-processing
+        var postProcessLayer = Camera.main.GetComponent<UnityEngine.Rendering.PostProcessing.PostProcessLayer>();
+        if (postProcessLayer == null)
+        {
+            postProcessLayer = Camera.main.gameObject.AddComponent<UnityEngine.Rendering.PostProcessing.PostProcessLayer>();
+        }
+
+        // Configure quality settings
+        QualitySettings.shadowDistance = 50f;
+        QualitySettings.shadowCascade4Split = new Vector3(0.067f, 0.2f, 0.467f);
+        QualitySettings.shadowCascades = ShadowCascades.FourCascades;
+    }
+}
+```
+
+## URDF Import and Robot Visualization
+
+### URDF Import Pipeline
+
+**URDF Importer Configuration:**
+```csharp
+// File: Assets/Scripts/URDFImporter.cs
+using UnityEngine;
+using Unity.Robotics.ROSTCPConnector.ROSTrajectory;
+using System.IO;
+using System.Xml;
+
+public class URDFImporter : MonoBehaviour
+{
+    [Header("URDF Import Settings")]
+    public string urdfFilePath = "";
+    public bool generateColliders = true;
+    public bool importJoints = true;
+    public bool generateTfFrames = true;
+
+    [Header("Material Settings")]
+    public Material defaultMaterial;
+    public bool usePBRMaterials = true;
+
+    void Start()
+    {
+        if (!string.IsNullOrEmpty(urdfFilePath))
+        {
+            ImportURDF(urdfFilePath);
+        }
+    }
+
+    public void ImportURDF(string filePath)
+    {
+        try
+        {
+            XmlDocument urdfDoc = new XmlDocument();
+            urdfDoc.Load(filePath);
+
+            XmlNode robotNode = urdfDoc.SelectSingleNode("//robot");
+            if (robotNode != null)
+            {
+                string robotName = robotNode.Attributes["name"]?.Value;
+                Debug.Log($"Importing robot: {robotName}");
+
+                // Create robot GameObject
+                GameObject robotGO = new GameObject(robotName);
+                robotGO.transform.SetParent(transform);
+
+                // Import links and joints
+                ImportLinks(robotNode, robotGO);
+                ImportJoints(robotNode, robotGO);
+
+                // Generate TF hierarchy
+                if (generateTfFrames)
+                {
+                    GenerateTFFrames(robotNode, robotGO);
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to import URDF: {e.Message}");
+        }
+    }
+
+    void ImportLinks(XmlNode robotNode, GameObject parent)
+    {
+        XmlNodeList linkNodes = robotNode.SelectNodes("//link");
+
+        foreach (XmlNode linkNode in linkNodes)
+        {
+            string linkName = linkNode.Attributes["name"]?.Value;
+            GameObject linkGO = new GameObject(linkName);
+            linkGO.transform.SetParent(parent.transform);
+
+            // Import visual elements
+            ImportVisual(linkNode, linkGO);
+
+            // Import collision elements
+            if (generateColliders)
+            {
+                ImportCollision(linkNode, linkGO);
+            }
+
+            // Import inertial properties
+            ImportInertial(linkNode, linkGO);
+        }
+    }
+
+    void ImportVisual(XmlNode linkNode, GameObject linkGO)
+    {
+        XmlNode visualNode = linkNode.SelectSingleNode("visual");
+        if (visualNode == null) return;
+
+        // Get geometry
+        XmlNode geometryNode = visualNode.SelectSingleNode("geometry");
+        if (geometryNode == null) return;
+
+        // Create visual GameObject
+        GameObject visualGO = new GameObject("visual");
+        visualGO.transform.SetParent(linkGO.transform);
+
+        // Import mesh based on geometry type
+        XmlNode meshNode = geometryNode.FirstChild;
+        if (meshNode != null)
+        {
+            ImportMesh(meshNode, visualGO);
+        }
+
+        // Import material
+        ImportMaterial(visualNode, visualGO);
+    }
+
+    void ImportMesh(XmlNode meshNode, GameObject parent)
+    {
+        string meshType = meshNode.Name;
+
+        switch (meshType)
+        {
+            case "box":
+                ImportBoxMesh(meshNode, parent);
+                break;
+            case "cylinder":
+                ImportCylinderMesh(meshNode, parent);
+                break;
+            case "sphere":
+                ImportSphereMesh(meshNode, parent);
+                break;
+            case "mesh":
+                ImportCustomMesh(meshNode, parent);
+                break;
+        }
+    }
+
+    void ImportBoxMesh(XmlNode boxNode, GameObject parent)
+    {
+        Vector3 size = ParseVector3(boxNode.Attributes["size"]?.Value);
+
+        GameObject box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        box.transform.SetParent(parent.transform);
+        box.transform.localScale = size;
+        box.name = "box_mesh";
+    }
+
+    void ImportCylinderMesh(XmlNode cylinderNode, GameObject parent)
+    {
+        float radius = float.Parse(cylinderNode.Attributes["radius"]?.Value);
+        float length = float.Parse(cylinderNode.Attributes["length"]?.Value);
+
+        GameObject cylinder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        cylinder.transform.SetParent(parent.transform);
+        cylinder.transform.localScale = new Vector3(radius * 2, length / 2, radius * 2);
+        cylinder.name = "cylinder_mesh";
+    }
+
+    void ImportSphereMesh(XmlNode sphereNode, GameObject parent)
+    {
+        float radius = float.Parse(sphereNode.Attributes["radius"]?.Value);
+
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.transform.SetParent(parent.transform);
+        sphere.transform.localScale = Vector3.one * radius * 2;
+        sphere.name = "sphere_mesh";
+    }
+
+    void ImportCustomMesh(XmlNode meshNode, GameObject parent)
+    {
+        string filename = meshNode.Attributes["filename"]?.Value;
+        Vector3 scale = ParseVector3(meshNode.Attributes["scale"]?.Value);
+
+        // For custom meshes, you would load them from file
+        // This is a simplified implementation
+        Debug.Log($"Loading custom mesh: {filename} with scale {scale}");
+
+        // Create placeholder
+        GameObject meshGO = new GameObject("custom_mesh");
+        meshGO.transform.SetParent(parent.transform);
+        meshGO.transform.localScale = scale;
+
+        // Add mesh filter and renderer (would load actual mesh)
+        var meshFilter = meshGO.AddComponent<MeshFilter>();
+        var meshRenderer = meshGO.AddComponent<MeshRenderer>();
+    }
+
+    void ImportMaterial(XmlNode visualNode, GameObject visualGO)
+    {
+        XmlNode materialNode = visualNode.SelectSingleNode("material");
+        if (materialNode == null)
+        {
+            // Use default material
+            var renderer = visualGO.GetComponent<Renderer>();
+            if (renderer != null && defaultMaterial != null)
+            {
+                renderer.material = defaultMaterial;
+            }
+            return;
+        }
+
+        string materialName = materialNode.Attributes["name"]?.Value;
+
+        // Find existing material or create new one
+        Material material = FindMaterial(materialName) ?? CreateMaterial(materialName);
+
+        // Apply material to all renderers in visual GO
+        var renderers = visualGO.GetComponentsInChildren<Renderer>();
+        foreach (var renderer in renderers)
+        {
+            renderer.material = material;
+        }
+    }
+
+    Material CreateMaterial(string name)
+    {
+        Material material;
+
+        if (usePBRMaterials)
+        {
+            material = new Material(Shader.Find("Standard"));
+        }
+        else
+        {
+            material = new Material(Shader.Find("Standard (Specular setup)"));
+        }
+
+        material.name = name;
+
+        // Add to material registry
+        // Implementation depends on your material management system
+
+        return material;
+    }
+
+    Material FindMaterial(string name)
+    {
+        // Implementation to find existing material
+        // This would check your material registry
+        return null;
+    }
+
+    Vector3 ParseVector3(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Vector3.one;
+
+        string[] parts = value.Split(' ');
+        if (parts.Length == 3)
+        {
+            return new Vector3(
+                float.Parse(parts[0]),
+                float.Parse(parts[1]),
+                float.Parse(parts[2])
+            );
+        }
+        return Vector3.one;
+    }
+}
+```
+
+### Real-Time Robot Control
+
+**Robot Controller with ROS Integration:**
+```csharp
+// File: Assets/Scripts/RobotController.cs
+using UnityEngine;
+using Unity.Robotics.ROSTCPConnector.ROSGeometry;
+using Unity.Robotics.ROSTCPConnector.ROSStdMsgs;
+
+public class RobotController : MonoBehaviour
+{
+    [Header("Joint Configuration")]
+    public Transform[] jointTransforms;
+    public string[] jointNames;
+
+    [Header("Control Parameters")]
+    public float maxJointVelocity = 1.0f;
+    public float jointAcceleration = 2.0f;
+
+    private float[] currentJointAngles;
+    private float[] targetJointAngles;
+    private float[] jointVelocities;
+
+    private ROSConnection ros;
+    private const string JOINT_STATE_TOPIC = "/joint_states";
+
+    void Start()
+    {
+        // Initialize ROS connection
+        ros = ROSConnection.instance;
+        ros.Subscribe<JointState>(JOINT_STATE_TOPIC, UpdateJointState);
+
+        // Initialize joint arrays
+        int numJoints = Mathf.Min(jointTransforms.Length, jointNames.Length);
+        currentJointAngles = new float[numJoints];
+        targetJointAngles = new float[numJoints];
+        jointVelocities = new float[numJoints];
+
+        for (int i = 0; i < numJoints; i++)
+        {
+            currentJointAngles[i] = 0f;
+            targetJointAngles[i] = 0f;
+            jointVelocities[i] = 0f;
+        }
+    }
+
+    void Update()
+    {
+        UpdateJointPositions();
+        PublishJointState();
+    }
+
+    void UpdateJointState(JointState jointState)
+    {
+        // Update target joint angles from ROS
+        for (int i = 0; i < jointNames.Length && i < jointState.name.Length; i++)
+        {
+            int jointIndex = System.Array.IndexOf(jointNames, jointState.name[i]);
+            if (jointIndex >= 0 && jointIndex < targetJointAngles.Length)
+            {
+                targetJointAngles[jointIndex] = (float)jointState.position[i];
+            }
+        }
+    }
+
+    void UpdateJointPositions()
+    {
+        for (int i = 0; i < jointTransforms.Length; i++)
+        {
+            // Smooth joint movement
+            float angleDiff = targetJointAngles[i] - currentJointAngles[i];
+
+            // Apply velocity limits
+            float maxDelta = maxJointVelocity * Time.deltaTime;
+            angleDiff = Mathf.Clamp(angleDiff, -maxDelta, maxDelta);
+
+            // Apply acceleration limits
+            float velocityDiff = angleDiff / Time.deltaTime;
+            float maxVelDiff = jointAcceleration * Time.deltaTime;
+            velocityDiff = Mathf.Clamp(velocityDiff, -maxVelDiff, maxVelDiff);
+
+            jointVelocities[i] += velocityDiff;
+            jointVelocities[i] = Mathf.Clamp(jointVelocities[i], -maxJointVelocity, maxJointVelocity);
+
+            // Update position
+            currentJointAngles[i] += jointVelocities[i] * Time.deltaTime;
+
+            // Apply to Unity transform
+            Vector3 rotation = jointTransforms[i].localRotation.eulerAngles;
+            rotation.z = Mathf.Rad2Deg * currentJointAngles[i];
+            jointTransforms[i].localRotation = Quaternion.Euler(rotation);
+        }
+    }
+
+    void PublishJointState()
+    {
+        // Publish current joint state back to ROS
+        JointState jointState = new JointState();
+        jointState.header.stamp = ROSConnection.instance.Now();
+
+        jointState.name = jointNames;
+        jointState.position = new double[jointNames.Length];
+        jointState.velocity = new double[jointNames.Length];
+        jointState.effort = new double[jointNames.Length];
+
+        for (int i = 0; i < jointNames.Length; i++)
+        {
+            jointState.position[i] = currentJointAngles[i];
+            jointState.velocity[i] = jointVelocities[i];
+            jointState.effort[i] = 0.0;
+        }
+
+        ros.Publish(JOINT_STATE_TOPIC, jointState);
+    }
+
+    public void SetJointPosition(string jointName, float angle)
+    {
+        int jointIndex = System.Array.IndexOf(jointNames, jointName);
+        if (jointIndex >= 0)
+        {
+            targetJointAngles[jointIndex] = angle;
+        }
+    }
+}
+```
+
+## Advanced Visualization Features
+
+### High-Fidelity Rendering Setup
+
+**PBR Material System:**
+```csharp
+// File: Assets/Scripts/MaterialSystem.cs
+using UnityEngine;
+using System.Collections.Generic;
+
+public class MaterialSystem : MonoBehaviour
+{
+    [Header("Material Properties")]
+    public Material[] standardMaterials;
+    public Material[] metallicMaterials;
+    public Material[] transparentMaterials;
+
+    private Dictionary<string, Material> materialRegistry = new Dictionary<string, Material>();
+
+    void Start()
+    {
+        InitializeMaterials();
+        ApplyMaterialsToScene();
+    }
+
+    void InitializeMaterials()
+    {
+        // Register standard materials
+        RegisterMaterial("plastic_default", CreatePlasticMaterial(Color.gray));
+        RegisterMaterial("metal_default", CreateMetalMaterial(Color.white));
+        RegisterMaterial("rubber_default", CreateRubberMaterial(Color.black));
+        RegisterMaterial("glass_default", CreateGlassMaterial(Color.white));
+    }
+
+    void RegisterMaterial(string name, Material material)
+    {
+        material.name = name;
+        materialRegistry[name] = material;
+    }
+
+    public Material GetMaterial(string name)
+    {
+        if (materialRegistry.ContainsKey(name))
+        {
+            return materialRegistry[name];
+        }
+
+        Debug.LogWarning($"Material '{name}' not found, using default");
+        return standardMaterials[0];
+    }
+
+    Material CreatePlasticMaterial(Color color)
+    {
+        Material material = new Material(Shader.Find("Standard"));
+        material.color = color;
+        material.SetFloat("_Metallic", 0.0f);
+        material.SetFloat("_Glossiness", 0.4f);
+        material.SetFloat("_SmoothnessTextureChannel", (int)UnityEngine.Rendering.SmoothnessTextureChannel.Albedo);
+        return material;
+    }
+
+    Material CreateMetalMaterial(Color color)
+    {
+        Material material = new Material(Shader.Find("Standard"));
+        material.color = color;
+        material.SetFloat("_Metallic", 1.0f);
+        material.SetFloat("_Glossiness", 0.8f);
+        material.SetFloat("_SmoothnessTextureChannel", (int)UnityEngine.Rendering.SmoothnessTextureChannel.Albedo);
+        return material;
+    }
+
+    Material CreateRubberMaterial(Color color)
+    {
+        Material material = new Material(Shader.Find("Standard"));
+        material.color = color;
+        material.SetFloat("_Metallic", 0.0f);
+        material.SetFloat("_Glossiness", 0.1f);
+        material.SetFloat("_SmoothnessTextureChannel", (int)UnityEngine.Rendering.SmoothnessTextureChannel.Albedo);
+        return material;
+    }
+
+    Material CreateGlassMaterial(Color color)
+    {
+        Material material = new Material(Shader.Find("Standard"));
+        material.color = color;
+        material.SetFloat("_Metallic", 0.0f);
+        material.SetFloat("_Glossiness", 0.9f);
+        material.SetFloat("_SmoothnessTextureChannel", (int)UnityEngine.Rendering.SmoothnessTextureChannel.Albedo);
+
+        // Set rendering mode to transparent
+        material.SetFloat("_Mode", 3f);
+        material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        material.SetInt("_ZWrite", 0);
+        material.DisableKeyword("_ALPHATEST_ON");
+        material.EnableKeyword("_ALPHABLEND_ON");
+        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        material.renderQueue = 3000;
+
+        return material;
+    }
+
+    void ApplyMaterialsToScene()
+    {
+        // Apply materials to renderers based on naming conventions
+        Renderer[] renderers = FindObjectsOfType<Renderer>();
+
+        foreach (Renderer renderer in renderers)
+        {
+            string materialName = GetMaterialNameFromRenderer(renderer);
+            Material material = GetMaterial(materialName);
+            renderer.material = material;
+        }
+    }
+
+    string GetMaterialNameFromRenderer(Renderer renderer)
+    {
+        // Extract material name from object name or tags
+        if (renderer.gameObject.name.Contains("metal"))
+            return "metal_default";
+        else if (renderer.gameObject.name.Contains("glass"))
+            return "glass_default";
+        else if (renderer.gameObject.name.Contains("rubber"))
+            return "rubber_default";
+        else
+            return "plastic_default";
+    }
+}
+```
+
+### Environment Lighting and Atmospherics
+
+**Dynamic Lighting System:**
+```csharp
+// File: Assets/Scripts/LightingSystem.cs
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.PostProcessing;
+
+public class LightingSystem : MonoBehaviour
+{
+    [Header("Lighting Configuration")]
+    public Light sunLight;
+    public float timeOfDay = 12f; // 24-hour format
+    public float dayDuration = 60f; // seconds
+
+    [Header("Atmosphere Settings")]
+    public Gradient skyColorGradient;
+    public Gradient sunColorGradient;
+    public AnimationCurve lightIntensityCurve;
+
+    private PostProcessVolume postProcessVolume;
+    private ColorGrading colorGrading;
+    private Bloom bloom;
+    private AmbientOcclusion ambientOcclusion;
+
+    void Start()
+    {
+        InitializePostProcessing();
+        UpdateLighting();
+    }
+
+    void Update()
+    {
+        // Update time of day
+        timeOfDay += Time.deltaTime / dayDuration;
+        if (timeOfDay >= 24f)
+            timeOfDay -= 24f;
+
+        UpdateLighting();
+    }
+
+    void InitializePostProcessing()
+    {
+        // Find or create post-process volume
+        postProcessVolume = FindObjectOfType<PostProcessVolume>();
+
+        if (postProcessVolume == null)
+        {
+            GameObject volumeGO = new GameObject("PostProcessVolume");
+            postProcessVolume = volumeGO.AddComponent<PostProcessVolume>();
+            volumeGO.AddComponent<PostProcessLayer>();
+        }
+
+        // Configure post-processing settings
+        postProcessVolume.profile = ScriptableObject.CreateInstance<PostProcessProfile>();
+
+        // Add color grading
+        colorGrading = postProcessVolume.profile.AddSettings<ColorGrading>();
+        colorGrading.enabled.value = true;
+
+        // Add bloom
+        bloom = postProcessVolume.profile.AddSettings<Bloom>();
+        bloom.enabled.value = true;
+        bloom.threshold.value = 1f;
+        bloom.intensity.value = 1f;
+
+        // Add ambient occlusion
+        ambientOcclusion = postProcessVolume.profile.AddSettings<AmbientOcclusion>();
+        ambientOcclusion.enabled.value = true;
+        ambientOcclusion.intensity.value = 1.0f;
+        ambientOcclusion.radius.value = 0.3f;
+    }
+
+    void UpdateLighting()
+    {
+        // Calculate sun angle based on time of day
+        float sunAngle = (timeOfDay - 6f) / 12f * Mathf.PI; // 6 AM to 6 PM
+        sunAngle = Mathf.Clamp(sunAngle, 0, Mathf.PI);
+
+        // Update sun position
+        Vector3 sunDirection = new Vector3(Mathf.Cos(sunAngle), Mathf.Sin(sunAngle), 0);
+        sunLight.transform.rotation = Quaternion.LookRotation(-sunDirection);
+
+        // Update lighting colors
+        Color skyColor = skyColorGradient.Evaluate(timeOfDay / 24f);
+        Color sunColor = sunColorGradient.Evaluate(timeOfDay / 24f);
+        float lightIntensity = lightIntensityCurve.Evaluate(timeOfDay / 24f);
+
+        // Apply lighting settings
+        RenderSettings.ambientSkyColor = skyColor * 0.5f;
+        sunLight.color = sunColor;
+        sunLight.intensity = lightIntensity;
+
+        // Update post-processing based on time of day
+        UpdatePostProcessing(sunAngle);
+    }
+
+    void UpdatePostProcessing(float sunAngle)
+    {
+        // Adjust color grading based on time of day
+        if (colorGrading != null)
+        {
+            float temperature = Mathf.Lerp(4000f, 6500f, sunAngle / Mathf.PI);
+            colorGrading.temperature.value = temperature;
+            colorGrading.tint.value = new Color(1f, 0.95f, 0.8f);
+        }
+
+        // Adjust bloom for sunrise/sunset
+        if (bloom != null)
+        {
+            float bloomIntensity = Mathf.Lerp(0.5f, 0f, Mathf.Abs(sunAngle - Mathf.PI/2f) / (Mathf.PI/2f));
+            bloom.intensity.value = bloomIntensity;
+        }
+
+        // Adjust ambient occlusion
+        if (ambientOcclusion != null)
+        {
+            float aoIntensity = Mathf.Lerp(1.0f, 0.3f, sunAngle / Mathf.PI);
+            ambientOcclusion.intensity.value = aoIntensity;
+        }
+    }
+
+    public void SetTimeOfDay(float time)
+    {
+        timeOfDay = Mathf.Clamp(time, 0f, 24f);
+        UpdateLighting();
+    }
+
+    public float GetTimeOfDay()
+    {
+        return timeOfDay;
+    }
+}
+```
+
+## VR/AR Integration
+
+### VR Visualization Setup
+
+**VR Robot Controller:**
+```csharp
+// File: Assets/Scripts/VRRobotController.cs
+using UnityEngine;
+using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
+using Unity.Robotics.ROSTCPConnector.ROSGeometry;
+
+[RequireComponent(typeof(XRGrabInteractable))]
+public class VRRobotController : MonoBehaviour
+{
+    [Header("VR Settings")]
+    public Transform leftController;
+    public Transform rightController;
+    public float manipulationDistance = 2f;
+
+    [Header("Robot Control")]
+    public RobotController robotController;
+    public string[] controllableJoints;
+
+    private XRGrabInteractable grabInteractable;
+    private Transform grabbedTransform;
+    private Vector3 grabOffset;
+    private Quaternion grabRotation;
+
+    void Start()
+    {
+        grabInteractable = GetComponent<XRGrabInteractable>();
+        grabInteractable.activated.AddListener(OnGrab);
+        grabInteractable.deactivated.AddListener(OnRelease);
+    }
+
+    void OnGrab(ActivateEventArgs args)
+    {
+        // Store grabbed object
+        grabbedTransform = args.interactorObject.transform;
+
+        // Calculate grab offset
+        grabOffset = transform.position - grabbedTransform.position;
+        grabRotation = Quaternion.Inverse(grabbedTransform.rotation) * transform.rotation;
+
+        // Highlight grabbed joint
+        HighlightJoint(true);
+    }
+
+    void OnRelease(DeactivateEventArgs args)
+    {
+        grabbedTransform = null;
+        HighlightJoint(false);
+    }
+
+    void Update()
+    {
+        if (grabbedTransform != null)
+        {
+            // Update joint position based on VR controller
+            Vector3 targetPosition = grabbedTransform.position + grabOffset;
+            Quaternion targetRotation = grabbedTransform.rotation * grabRotation;
+
+            // Convert VR position to robot joint angle
+            float jointAngle = ConvertPositionToJointAngle(targetPosition, name);
+
+            // Apply to robot
+            robotController.SetJointPosition(name, jointAngle);
+        }
+    }
+
+    float ConvertPositionToJointAngle(Vector3 position, string jointName)
+    {
+        // Convert 3D position to joint angle
+        // This depends on your robot's kinematics
+        // Simplified example for revolute joint
+
+        Transform jointTransform = robotController.GetJointTransform(jointName);
+        if (jointTransform != null)
+        {
+            Vector3 localPosition = jointTransform.InverseTransformPoint(position);
+            return Mathf.Atan2(localPosition.y, localPosition.x);
+        }
+
+        return 0f;
+    }
+
+    void HighlightJoint(bool highlight)
+    {
+        Renderer renderer = GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            if (highlight)
+            {
+                renderer.material.color = Color.yellow;
+            }
+            else
+            {
+                renderer.material.color = Color.white;
+            }
+        }
+    }
+
+    public string GetJointName()
+    {
+        return gameObject.name;
+    }
+}
+```
+
+## Data Visualization and Analytics
+
+### Sensor Data Visualization
+
+**3D Sensor Display:**
+```csharp
+// File: Assets/Scripts/SensorVisualizer.cs
+using UnityEngine;
+using Unity.Robotics.ROSTCPConnector.ROSStdMsgs;
+using Unity.Robotics.ROSTCPConnector.SensorMsgs;
+using System.Collections.Generic;
+
+public class SensorVisualizer : MonoBehaviour
+{
+    [Header("Visualization Settings")]
+    public LineRenderer laserScanLine;
+    public GameObject pointCloudParticle;
+    public float sensorUpdateRate = 10f;
+
+    private ROSConnection ros;
+    private List<GameObject> pointCloudParticles = new List<GameObject>();
+    private float lastUpdateTime;
+
+    void Start()
+    {
+        ros = ROSConnection.instance;
+
+        // Subscribe to sensor topics
+        ros.Subscribe<LaserScan>("/laser/scan", VisualizeLaserScan);
+        ros.Subscribe<PointCloud2>("/camera/depth/points", VisualizePointCloud);
+
+        lastUpdateTime = Time.time;
+    }
+
+    void VisualizeLaserScan(LaserScan scan)
+    {
+        if (Time.time - lastUpdateTime < 1f / sensorUpdateRate)
+            return;
+
+        lastUpdateTime = Time.time;
+
+        // Clear existing scan visualization
+        laserScanLine.positionCount = 0;
+
+        // Create scan points
+        Vector3[] positions = new Vector3[scan.ranges.Length];
+
+        for (int i = 0; i < scan.ranges.Length; i++)
+        {
+            float range = scan.ranges[i];
+            if (range < scan.range_min || range > scan.range_max)
+                continue;
+
+            float angle = scan.angle_min + i * scan.angle_increment;
+
+            // Convert polar to Cartesian coordinates
+            Vector3 point = new Vector3(
+                range * Mathf.Cos(angle),
+                range * Mathf.Sin(angle),
+                0f
+            );
+
+            // Transform to Unity coordinate system
+            positions[i] = ConvertToUnityCoordinates(point);
+        }
+
+        // Update line renderer
+        laserScanLine.positionCount = positions.Length;
+        laserScanLine.SetPositions(positions);
+    }
+
+    void VisualizePointCloud(PointCloud2 pointCloud)
+    {
+        if (Time.time - lastUpdateTime < 1f / sensorUpdateRate)
+            return;
+
+        lastUpdateTime = Time.time;
+
+        // Clear existing particles
+        foreach (GameObject particle in pointCloudParticles)
+        {
+            Destroy(particle);
+        }
+        pointCloudParticles.Clear();
+
+        // Parse point cloud data
+        int pointCount = pointCloud.height * pointCloud.width;
+        float[] points = new float[pointCount * 3]; // x, y, z for each point
+
+        // Extract points from byte data
+        System.Buffer.BlockCopy(pointCloud.data, 0, points, 0, points.Length * 4);
+
+        // Create visualization particles
+        for (int i = 0; i < pointCount; i++)
+        {
+            Vector3 point = new Vector3(points[i * 3], points[i * 3 + 1], points[i * 3 + 2]);
+
+            // Filter valid points
+            if (float.IsNaN(point.x) || float.IsInfinity(point.x))
+                continue;
+
+            GameObject particle = Instantiate(pointCloudParticle, point, Quaternion.identity);
+            pointCloudParticles.Add(particle);
+        }
+    }
+
+    Vector3 ConvertToUnityCoordinates(Vector3 rosPoint)
+    {
+        // Convert ROS coordinate system to Unity
+        // ROS: x=forward, y=left, z=up
+        // Unity: x=right, y=up, z=forward
+
+        return new Vector3(-rosPoint.y, rosPoint.z, rosPoint.x);
+    }
+
+    void OnDestroy()
+    {
+        // Cleanup particles
+        foreach (GameObject particle in pointCloudParticles)
+        {
+            Destroy(particle);
+        }
+    }
+}
+```
+
+## Performance Optimization
+
+### Level of Detail (LOD) System
+
+**LOD Manager for Large Scenes:**
+```csharp
+// File: Assets/Scripts/LODManager.cs
+using UnityEngine;
+
+public class LODManager : MonoBehaviour
+{
+    [Header("LOD Settings")]
+    public Camera targetCamera;
+    public float[] lodDistances = {10f, 25f, 50f, 100f};
+    public GameObject[] lodObjects;
+
+    private Transform[] lodTransforms;
+    private int currentLODLevel;
+
+    void Start()
+    {
+        if (targetCamera == null)
+            targetCamera = Camera.main;
+
+        // Initialize LOD transforms
+        lodTransforms = new Transform[lodObjects.Length];
+        for (int i = 0; i < lodObjects.Length; i++)
+        {
+            lodTransforms[i] = lodObjects[i].transform;
+
+            // Initially disable all LOD objects
+            lodObjects[i].SetActive(false);
+        }
+
+        // Enable first LOD level
+        if (lodObjects.Length > 0)
+        {
+            lodObjects[0].SetActive(true);
+        }
+
+        currentLODLevel = 0;
+    }
+
+    void Update()
+    {
+        int lodLevel = CalculateLODLevel();
+
+        if (lodLevel != currentLODLevel)
+        {
+            SwitchLOD(lodLevel);
+        }
+    }
+
+    int CalculateLODLevel()
+    {
+        if (targetCamera == null)
+            return 0;
+
+        float distance = Vector3.Distance(transform.position, targetCamera.transform.position);
+
+        for (int i = 0; i < lodDistances.Length; i++)
+        {
+            if (distance <= lodDistances[i])
+            {
+                return i;
+            }
+        }
+
+        return lodDistances.Length;
+    }
+
+    void SwitchLOD(int newLODLevel)
+    {
+        // Disable current LOD
+        if (currentLODLevel < lodObjects.Length && lodObjects[currentLODLevel] != null)
+        {
+            lodObjects[currentLODLevel].SetActive(false);
+        }
+
+        // Enable new LOD
+        if (newLODLevel < lodObjects.Length && lodObjects[newLODLevel] != null)
+        {
+            lodObjects[newLODLevel].SetActive(true);
+
+            // Copy transform position
+            if (currentLODLevel >= 0 && currentLODLevel < lodTransforms.Length)
+            {
+                lodObjects[newLODLevel].transform.position = lodTransforms[currentLODLevel].position;
+                lodObjects[newLODLevel].transform.rotation = lodTransforms[currentLODLevel].rotation;
+                lodObjects[newLODLevel].transform.localScale = lodTransforms[currentLODLevel].transform.localScale;
+            }
+        }
+
+        currentLODLevel = newLODLevel;
+
+        Debug.Log($"Switched to LOD level {newLODLevel}");
+    }
+}
+```
+
+## Best Practices and Performance
+
+### Optimization Guidelines
+
+**1. Batching and Instancing:**
+```csharp
+// Use Graphics.DrawMeshInstanced for large numbers of similar objects
+void DrawInstancedObjects()
+{
+    Mesh mesh = GetMesh();
+    Material material = GetMaterial();
+    Matrix4x4[] matrices = GetInstanceMatrices();
+
+    Graphics.DrawMeshInstanced(mesh, 0, material, matrices, matrices.Length);
+}
+```
+
+**2. GPU Skinning:**
+```csharp
+// Configure skinned mesh renderers for animated characters
+void ConfigureSkinnedRenderer(SkinnedMeshRenderer renderer)
+{
+    renderer.quality = SkinQuality.Bone2;
+    renderer.updateWhenOffscreen = false;
+
+    // Optimize blend shapes
+    renderer.SetBlendShapeWeight(0, 0f);
+}
+```
+
+**3. Texture Compression:**
+```csharp
+// Use appropriate texture compression formats
+Texture2D LoadCompressedTexture(string path)
+{
+    byte[] fileData = System.IO.File.ReadAllBytes(path);
+    Texture2D texture = new Texture2D(2, 2);
+
+    // Auto-detect compression format
+    texture.LoadImage(fileData);
+    texture.Compress(false);
+
+    return texture;
+}
+```
+
+### Memory Management
+
+**Object Pooling:**
+```csharp
+// Object pool for frequently created/destroyed objects
+public class ObjectPool<T> where T : MonoBehaviour
+{
+    private Queue<T> pool = new Queue<T>();
+    private GameObject prefab;
+    private Transform parent;
+
+    public ObjectPool(GameObject prefab, int initialSize = 10, Transform parent = null)
+    {
+        this.prefab = prefab;
+        this.parent = parent;
+
+        for (int i = 0; i < initialSize; i++)
+        {
+            T obj = UnityEngine.Object.Instantiate(prefab, parent).GetComponent<T>();
+            obj.gameObject.SetActive(false);
+            pool.Enqueue(obj);
+        }
+    }
+
+    public T Get()
+    {
+        if (pool.Count > 0)
+        {
+            T obj = pool.Dequeue();
+            obj.gameObject.SetActive(true);
+            return obj;
+        }
+
+        return UnityEngine.Object.Instantiate(prefab, parent).GetComponent<T>();
+    }
+
+    public void ReturnToPool(T obj)
+    {
+        obj.gameObject.SetActive(false);
+        pool.Enqueue(obj);
+    }
+}
+```
+
+## Testing and Debugging
+
+### Performance Profiling
+
+**Custom Profiler:**
+```csharp
+using UnityEngine;
+using System.Diagnostics;
+
+public class CustomProfiler : MonoBehaviour
+{
+    [Header("Profiling")]
+    public bool enableProfiling = true;
+    public float reportInterval = 1f;
+
+    private Stopwatch stopwatch = new Stopwatch();
+    private float lastReportTime;
+    private int frameCount;
+    private float totalTime;
+
+    void Start()
+    {
+        lastReportTime = Time.time;
+        frameCount = 0;
+        totalTime = 0f;
+    }
+
+    void Update()
+    {
+        if (!enableProfiling)
+            return;
+
+        stopwatch.Start();
+
+        // Profile your code here
+        ProfileUpdate();
+
+        stopwatch.Stop();
+
+        frameCount++;
+        totalTime += (float)stopwatch.Elapsed.TotalSeconds;
+
+        if (Time.time - lastReportTime >= reportInterval)
+        {
+            ReportPerformance();
+            lastReportTime = Time.time;
+        }
+    }
+
+    void ProfileUpdate()
+    {
+        // Your update logic here
+    }
+
+    void ReportPerformance()
+    {
+        float averageFrameTime = totalTime / frameCount;
+        float fps = 1f / averageFrameTime;
+
+        UnityEngine.Debug.Log($"Performance Report:");
+        UnityEngine.Debug.Log($"Average Frame Time: {averageFrameTime * 1000:F2} ms");
+        UnityEngine.Debug.Log($"FPS: {fps:F2}");
+        UnityEngine.Debug.Log($"Frames: {frameCount}");
+
+        frameCount = 0;
+        totalTime = 0f;
+    }
+}
+```
+
+## Next Steps
+
+This comprehensive guide to Unity-ROS integration provides the foundation for creating advanced robotics visualization systems. The next sections will cover:
+
+1. **Multi-Robot Visualization**: Managing multiple robots in complex environments
+2. **Real-Time Collaboration**: Networked simulation and remote visualization
+3. **Analytics and Data Mining**: Extracting insights from simulation data
+4. **Production Deployment**: Optimizing for real-world applications
+
+By mastering these Unity integration techniques, you'll be equipped to create professional-grade robotics visualization systems for education, research, and industrial applications.

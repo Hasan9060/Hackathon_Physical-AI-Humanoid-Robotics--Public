@@ -1,0 +1,383 @@
+---
+title: Hardware Requirements and Specifications
+description: Detailed hardware specifications and procurement guidance for robotics laboratory setup
+sidebar_label: Hardware Requirements
+---
+
+# Hardware Requirements and Specifications
+
+This section provides comprehensive hardware specifications and procurement guidance for setting up a Physical AI and Humanoid Robotics laboratory. The requirements are organized by infrastructure component with detailed technical specifications, vendor recommendations, and cost analysis.
+
+## Digital Twin Workstation Specifications
+
+### Minimum Requirements
+
+**Processor:**
+- Intel Core i7-12700K or AMD Ryzen 7 5800X
+- 12+ cores, 20+ threads
+- Base clock 3.6Ghz+, Boost 4.8Ghz+
+
+**Graphics:**
+- NVIDIA RTX 3080 Ti or RTX A4500
+- 12GB+ VRAM
+- CUDA cores 8704+
+- Tensor Cores for AI acceleration
+
+**Memory:**
+- 32GB DDR4 3200MHz or DDR5 4800MHz
+- 2x16GB configuration for dual-channel
+- ECC memory recommended for reliability
+
+**Storage:**
+- 1TB NVMe SSD (PCIe 4.0)
+- 500MB/s+ read/write speeds
+- Additional 2TB HDD for backup/storage
+
+### Recommended Specifications
+
+**Processor:**
+- Intel Core i9-13900K or AMD Ryzen 9 7950X
+- 16-24 cores, 32-48 threads
+- Base clock 3.2Ghz+, Boost 5.8Ghz+
+
+**Graphics:**
+- NVIDIA RTX 4090 or RTX A6000
+- 24GB+ VRAM
+- CUDA cores 16384+ (RTX 4090)
+- Third-generation Tensor Cores
+
+**Memory:**
+- 64GB DDR5 5600MHz
+- 4x16GB configuration for quad-channel
+- ECC RAM mandatory for mission-critical work
+
+**Storage:**
+- 2TB NVMe SSD (PCIe 4.0/5.0)
+- 7,000MB/s+ read speeds
+- 4TB secondary NVMe SSD
+- 8TB NAS for shared storage
+
+### Recommended Vendors and Models
+
+**Pre-built Workstations:**
+- **Dell Precision 7865 Tower**: $8,500 - $12,000
+- **HP Z4 G4 Workstation**: $7,000 - $10,000
+- **Lenovo ThinkStation P720**: $6,500 - $9,500
+
+**Component Builds:**
+- **Custom Build**: $5,500 - $8,000
+- **Origin PC Chronos**: $7,000 - $11,000
+- **Maingear Vector**: $6,000 - $9,000
+
+### Peripheral Requirements
+
+**Monitors:**
+- Primary: 32" 4K 144Hz HDR monitor
+- Secondary: 27" 1440p 165Hz monitor
+- Color accuracy: ΔE < 2 for simulation work
+
+**Input Devices:**
+- Mechanical keyboard with programmable keys
+- High-precision gaming mouse (16,000+ DPI)
+- Graphics tablet for detailed modeling work
+
+**Network:**
+- 10GbE network card
+- Wi-Fi 6E adapter
+- Multiple USB 3.2 Gen 2 ports
+
+## Edge AI Kit Specifications
+
+### Jetson Orin Development Kits
+
+**NVIDIA Jetson AGX Orin Dev Kit:**
+- 64GB LPDDR5 RAM
+- 275 TOPS AI performance
+- 512-core Volta GPU
+- 8K video encode/decode
+- Price: $1,999 - $2,499
+
+**NVIDIA Jetson Orin Nano Dev Kit:**
+- 8GB LPDDR5 RAM
+- 40 TOPS AI performance
+- 1024-core Ampere GPU
+- 4K video processing
+- Price: $499 - $599
+
+### Industrial Configuration
+
+**Embedded Systems:**
+- **Connect Tech RouterBoard**: $1,200 - $1,800
+- **Auvidea JN30**: $800 - $1,200
+- **Silicon Mechanics HPC**: $1,500 - $2,200
+
+**Power Requirements:**
+- 12V-24V DC power input
+- 60W max power consumption
+- UPS backup for uninterrupted operation
+- Power over Ethernet (PoE) support
+
+**Environmental:**
+- Operating temperature: 0°C to 50°C
+- IP65 rating for outdoor deployment
+- Shock resistance: 5G
+- Vibration resistance: 0.5G RMS
+
+## Humanoid Robot Specifications
+
+### Unitree H1 (Research Grade)
+
+**Physical Specifications:**
+- Height: 180cm
+- Weight: 47kg
+- Payload: 3kg per arm
+- Degrees of Freedom: 19 (12 legs, 6 arms, 1 waist)
+
+**Performance:**
+- Max speed: 3.3 m/s
+- Step height: 20cm
+- Battery life: 2 hours continuous
+- Operating time: 8 hours standby
+
+**Sensors:**
+- Intel RealSense D435i depth camera
+- 3D LiDAR (16 beam)
+- 9-axis IMU
+- Joint position/velocity sensors
+
+**Compute:**
+- Intel Core i7 processor
+- 16GB RAM
+- NVIDIA RTX 3060 GPU
+- 1TB SSD storage
+
+**Pricing:**
+- Base unit: $150,000
+- Development license: $15,000/year
+- Support contract: $20,000/year
+- **Total 1-year cost: $185,000**
+
+### Unitree G1 (Educational Grade)
+
+**Physical Specifications:**
+- Height: 132cm
+- Weight: 35kg
+- Payload: 2kg per arm
+- Degrees of Freedom: 23 (12 legs, 8 arms, 3 waist)
+
+**Performance:**
+- Max speed: 2.0 m/s
+- Step height: 15cm
+- Battery life: 2 hours continuous
+- Operating time: 6 hours standby
+
+**Sensors:**
+- Intel RealSense D415 depth camera
+- 2D LiDAR (270° coverage)
+- 6-axis IMU
+- Force sensors in feet
+
+**Compute:**
+- Intel Core i5 processor
+- 8GB RAM
+- Integrated graphics
+- 500GB SSD storage
+
+**Pricing:**
+- Base unit: $90,000
+- Educational license: $5,000/year
+- Support contract: $8,000/year
+- **Total 1-year cost: $103,000**
+
+### Alternative Options
+
+**Boston Dynamics Spot:**
+- Research quadruped platform
+- Excellent for outdoor navigation
+- Price: $74,500 (base configuration)
+
+**ANYbotics ANYmal:**
+- Industrial inspection platform
+- Extensive SDK support
+- Price: $150,000 - $300,000
+
+**UBTech Walker:**
+- Humanoid platform with advanced AI
+- Natural language processing
+- Price: $200,000+ (research licensing)
+
+## Network Infrastructure
+
+### Core Network Requirements
+
+**Switches:**
+- **Core Switch**: 48-port 10GbE switch
+  - Cisco Catalyst 9300: $15,000 - $25,000
+  - Arista 7280R: $12,000 - $20,000
+  - Juniper EX4300: $8,000 - $15,000
+
+**Edge Switches:**
+- 24-port 1GbE switches for workstations
+- PoE+ support for cameras and sensors
+- Managed switches with VLAN support
+
+**Wireless Infrastructure:**
+- Wi-Fi 6E access points
+- Tri-band (2.4/5/6 GHz)
+- MU-MIMO and OFDMA support
+- Aruba AP-635: $1,500 - $2,000 per AP
+
+### Bandwidth Requirements
+
+**Internal Traffic:**
+- Robot-to-workstation: 1Gbps per robot
+- Simulation streaming: 100Mbps per workstation
+- Backup and storage: 10Gbps backbone
+
+**External Connectivity:**
+- Internet: 1Gbps dedicated line
+- Cloud services: 500Mbps for model training
+- Remote access: 100Mbps for VPN connections
+
+## Safety and Facility Requirements
+
+### Physical Safety Infrastructure
+
+**Emergency Systems:**
+- Emergency stop buttons: $500 - $1,000 each
+- Safety light curtains: $2,000 - $4,000 per station
+- Area scanners: $1,500 - $3,000 each
+- Safety relays and controllers: $3,000 - $6,000
+
+**Physical Barriers:**
+- Robotic work cells with polycarbonate panels
+- Safety gates with interlock systems
+- Anti-static flooring
+- Climate control and ventilation
+
+**Power Infrastructure:**
+- Isolated power circuits for robots
+- UPS systems for critical equipment
+- Grounding and surge protection
+- Backup generator capability
+
+### Environmental Requirements
+
+**Space Requirements:**
+- **Workstation Area**: 20m² per 4 students
+- **Robot Testing Area**: 50m² minimum
+- **Storage and Maintenance**: 15m²
+- **Total Lab Space**: 100m² for 20 students
+
+**Climate Control:**
+- Temperature: 20°C - 24°C
+- Humidity: 40% - 60%
+- Air filtration: HEPA filters
+- Positive pressure for sensitive equipment
+
+## Budget Summary
+
+### Complete Laboratory Setup (20 Students)
+
+| Category | Item | Quantity | Unit Cost | Total |
+|----------|------|----------|-----------|-------|
+| **Computing** | RTX 4090 Workstations | 10 | $8,000 | $80,000 |
+| | Jetson AGX Orin Kits | 20 | $2,000 | $40,000 |
+| **Robotics** | Unitree G1 Humanoids | 4 | $90,000 | $360,000 |
+| **Network** | 10GbE Switch | 1 | $15,000 | $15,000 |
+| | 1GbE Edge Switches | 4 | $2,000 | $8,000 |
+| | Wi-Fi 6E Access Points | 6 | $1,500 | $9,000 |
+| **Safety** | Emergency Stop Systems | 8 | $750 | $6,000 |
+| | Safety Barriers | 4 | $5,000 | $20,000 |
+| **Facility** | Power Conditioning | 1 | $25,000 | $25,000 |
+| | Climate Control | 1 | $30,000 | $30,000 |
+| **Software** | Development Licenses | 20 | $1,500 | $30,000 |
+| | Support Contracts | 1 | $50,000 | $50,000 |
+| **TOTAL** | | | | **$673,000** |
+
+### Operational Costs (Annual)
+
+| Category | Item | Annual Cost |
+|----------|------|-------------|
+| **Software** | License renewals | $75,000 |
+| **Support** | Hardware maintenance | $80,000 |
+| **Training** | Faculty development | $25,000 |
+| **Consumables** | Spare parts, materials | $20,000 |
+| **Utilities** | Power, cooling, internet | $15,000 |
+| **TOTAL ANNUAL** | | **$215,000** |
+
+## Procurement Timeline
+
+### Phase 1: Foundation (3 months)
+
+**Month 1:**
+- Network infrastructure installation
+- Power and safety systems
+- Climate control setup
+
+**Month 2:**
+- Workstation procurement and setup
+- Development environment configuration
+- Basic simulation software installation
+
+**Month 3:**
+- Initial robot procurement (1 unit)
+- Faculty training
+- Course material development
+
+### Phase 2: Expansion (3 months)
+
+**Month 4-5:**
+- Additional workstation deployment
+- Edge AI kit procurement and setup
+- First robot deployment and testing
+
+**Month 6:**
+- Additional robot procurement
+- Student pilot program
+- Curriculum refinement
+
+### Phase 3: Full Operation (6 months)
+
+**Month 7-12:**
+- Complete robot deployment
+- Full student enrollment
+- Research project initiation
+- Industry partnership development
+
+## Vendor Relationships
+
+### Strategic Partnerships
+
+**NVIDIA:**
+- Educational discount program
+- Technical support and training
+- Early access to new technologies
+
+**Unitree Robotics:**
+- Research collaboration opportunities
+- Educational pricing
+- Joint publication potential
+
+**Dell/HP/Lenovo:**
+- Volume purchasing agreements
+- On-site support contracts
+- Hardware refresh programs
+
+### Support Contracts
+
+**Hardware Support:**
+- 24/7 technical support
+- Next business day replacement
+- Preventive maintenance visits
+- Firmware and software updates
+
+**Software Support:**
+- License management
+- Technical training
+- Development assistance
+- Bug fixes and patches
+
+---
+
+This comprehensive hardware specification guide provides the foundation for procuring and setting up a world-class Physical AI and Humanoid Robotics laboratory. The modular approach allows for phased implementation based on budget constraints and educational requirements.

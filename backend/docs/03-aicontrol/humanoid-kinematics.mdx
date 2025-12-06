@@ -1,0 +1,1307 @@
+---
+title: Humanoid Robot Kinematics and Control
+description: Kinematics, dynamics, and control systems for humanoid robots
+sidebar_label: Humanoid Kinematics
+---
+
+# Humanoid Robot Kinematics and Control
+
+## Overview
+
+Humanoid robot kinematics and control represent one of the most complex challenges in robotics. This module covers the mathematical foundations and practical implementation of controlling bipedal robots with multiple degrees of freedom, focusing on forward/inverse kinematics, gait planning, dynamic balance, and whole-body coordination.
+
+## Kinematic Foundations
+
+### Forward Kinematics
+
+Forward kinematics computes the position and orientation of robot end-effectors given joint angles:
+
+```python
+# Forward kinematics for humanoid robots using transformation matrices
+import numpy as np
+from typing import Dict, Tuple, List
+
+class HumanoidForwardKinematics:
+    def __init__(self, robot_config):
+        self.robot_config = robot_config
+        self.joint_names = robot_config['joint_names']
+        self.link_lengths = robot_config['link_lengths']
+        self.joint_limits = robot_config['joint_limits']
+        self.num_joints = len(self.joint_names)
+
+    def transformation_matrix(self, joint_angle, link_length, joint_type='revolute'):
+        """Create homogeneous transformation matrix for a joint"""
+        if joint_type == 'revolute':
+            # Rotation around Z-axis (standard DH convention)
+            cos_theta = np.cos(joint_angle)
+            sin_theta = np.sin(joint_angle)
+
+            T = np.array([
+                [cos_theta, -sin_theta, 0, link_length],
+                [sin_theta,  cos_theta, 0, 0],
+                [0,          0,          1, 0],
+                [0,          0,          0, 1]
+            ])
+        elif joint_type == 'prismatic':
+            # Translation along Z-axis
+            T = np.array([
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, joint_angle],
+                [0, 0, 0, 1]
+            ])
+        else:
+            raise ValueError(f"Unsupported joint type: {joint_type}")
+
+        return T
+
+    def compute_leg_forward_kinematics(self, joint_angles: np.ndarray, leg_side: str) -> Dict:
+        """Compute forward kinematics for a single leg chain"""
+        if leg_side not in ['left', 'right']:
+            raise ValueError("leg_side must be 'left' or 'right'")
+
+        # Define joint indices for leg (hip_yaw, hip_roll, hip_pitch, knee, ankle_pitch, ankle_roll)
+        if leg_side == 'left':
+            joint_indices = [0, 1, 2, 3, 4, 5]  # Example indices
+        else:
+            joint_indices = [6, 7, 8, 9, 10, 11]  # Right leg indices
+
+        leg_joints = joint_angles[joint_indices]
+
+        # Initialize transformation at hip base
+        T_current = np.eye(4)
+
+        # Apply transformations for each joint
+        transformations = []
+        for i, (joint_angle, joint_name) in enumerate(zip(leg_joints, self.joint_names[joint_indices[0]:joint_indices[-1]+1])):
+            link_length = self.link_lengths[joint_name]
+
+            # Determine joint type and axis
+            if 'hip' in joint_name:
+                if 'yaw' in joint_name:
+                    T_joint = self.rotation_z(joint_angle)
+                elif 'roll' in joint_name:
+                    T_joint = self.rotation_x(joint_angle)
+                elif 'pitch' in joint_name:
+                    T_joint = self.rotation_y(joint_angle)
+            elif 'knee' in joint_name:
+                T_joint = self.rotation_y(joint_angle)
+            elif 'ankle' in joint_name:
+                if 'pitch' in joint_name:
+                    T_joint = self.rotation_y(joint_angle)
+                elif 'roll' in joint_name:
+                    T_joint = self.rotation_x(joint_angle)
+            else:
+                T_joint = self.rotation_z(joint_angle)
+
+            # Add translation
+            T_joint[0:3, 3] = [link_length if i == 0 else 0, 0, 0]
+
+            T_current = T_current @ T_joint
+            transformations.append(T_current.copy())
+
+        # Extract final end-effector position and orientation
+        foot_position = T_current[0:3, 3]
+        foot_orientation = self.rotation_matrix_to_euler(T_current[0:3, 0:3])
+
+        return {
+            'foot_position': foot_position,
+            'foot_orientation': foot_orientation,
+            'transformations': transformations,
+            'final_transformation': T_current
+        }
+
+    def compute_arm_forward_kinematics(self, joint_angles: np.ndarray, arm_side: str) -> Dict:
+        """Compute forward kinematics for arm chain"""
+        if arm_side not in ['left', 'right']:
+            raise ValueError("arm_side must be 'left' or 'right'")
+
+        # Define joint indices for arm
+        if arm_side == 'left':
+            joint_indices = [12, 13, 14, 15, 16, 17, 18]  # Shoulder to fingers
+        else:
+            joint_indices = [19, 20, 21, 22, 23, 24, 25]  # Right arm
+
+        arm_joints = joint_angles[joint_indices]
+
+        # Similar transformation process as legs
+        T_current = np.eye(4)
+        transformations = []
+
+        for i, joint_angle in enumerate(arm_joints):
+            # Apply joint-specific transformations
+            T_joint = self.compute_arm_joint_transform(i, joint_angle)
+            T_current = T_current @ T_joint
+            transformations.append(T_current.copy())
+
+        hand_position = T_current[0:3, 3]
+        hand_orientation = self.rotation_matrix_to_euler(T_current[0:3, 0:3])
+
+        return {
+            'hand_position': hand_position,
+            'hand_orientation': hand_orientation,
+            'transformations': transformations,
+            'final_transformation': T_current
+        }
+
+    def compute_whole_body_forward_kinematics(self, joint_angles: np.ndarray) -> Dict:
+        """Compute forward kinematics for entire humanoid body"""
+        results = {}
+
+        # Torso/pelvis position (base frame)
+        results['torso_position'] = np.array([0, 0, self.robot_config['hip_height']])
+        results['torso_orientation'] = np.array([0, 0, 0])  # Upright
+
+        # Left leg
+        results['left_leg'] = self.compute_leg_forward_kinematics(joint_angles, 'left')
+
+        # Right leg
+        results['right_leg'] = self.compute_leg_forward_kinematics(joint_angles, 'right')
+
+        # Left arm
+        results['left_arm'] = self.compute_arm_forward_kinematics(joint_angles, 'left')
+
+        # Right arm
+        results['right_arm'] = self.compute_arm_forward_kinematics(joint_angles, 'right')
+
+        # Head
+        results['head'] = self.compute_head_forward_kinematics(joint_angles)
+
+        return results
+
+    @staticmethod
+    def rotation_x(angle):
+        """Rotation matrix around X axis"""
+        c, s = np.cos(angle), np.sin(angle)
+        return np.array([
+            [1, 0, 0, 0],
+            [0, c, -s, 0],
+            [0, s, c, 0],
+            [0, 0, 0, 1]
+        ])
+
+    @staticmethod
+    def rotation_y(angle):
+        """Rotation matrix around Y axis"""
+        c, s = np.cos(angle), np.sin(angle)
+        return np.array([
+            [c, 0, s, 0],
+            [0, 1, 0, 0],
+            [-s, 0, c, 0],
+            [0, 0, 0, 1]
+        ])
+
+    @staticmethod
+    def rotation_z(angle):
+        """Rotation matrix around Z axis"""
+        c, s = np.cos(angle), np.sin(angle)
+        return np.array([
+            [c, -s, 0, 0],
+            [s, c, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ])
+
+    @staticmethod
+    def rotation_matrix_to_euler(R):
+        """Convert rotation matrix to Euler angles"""
+        sy = np.sqrt(R[0, 0]**2 + R[1, 0]**2)
+
+        singular = sy < 1e-6
+
+        if not singular:
+            x = np.arctan2(R[2, 1], R[2, 2])
+            y = np.arctan2(-R[2, 0], sy)
+            z = np.arctan2(R[1, 0], R[0, 0])
+        else:
+            x = np.arctan2(-R[1, 2], R[1, 1])
+            y = np.arctan2(-R[2, 0], sy)
+            z = 0
+
+        return np.array([x, y, z])
+```
+
+### Inverse Kinematics
+
+Inverse kinematics computes joint angles required to achieve desired end-effector positions:
+
+```python
+# Inverse kinematics using Jacobian-based methods and optimization
+class HumanoidInverseKinematics:
+    def __init__(self, forward_kinematics, robot_config):
+        self.fk = forward_kinematics
+        self.robot_config = robot_config
+        self.joint_limits = robot_config['joint_limits']
+        self.num_joints = robot_config['num_joints']
+
+        # IK solver parameters
+        self.max_iterations = 100
+        self.position_tolerance = 1e-4
+        self.orientation_tolerance = 1e-3
+        self.damping_factor = 0.1  # For damped least squares
+
+    def solve_leg_ik(self, target_foot_pos, target_foot_orient, current_joints, leg_side):
+        """Solve inverse kinematics for leg using numerical optimization"""
+        if leg_side == 'left':
+            joint_indices = [0, 1, 2, 3, 4, 5]
+        else:
+            joint_indices = [6, 7, 8, 9, 10, 11]
+
+        # Initialize with current joint angles
+        joint_angles = current_joints[joint_indices].copy()
+
+        for iteration in range(self.max_iterations):
+            # Current forward kinematics
+            current_fk = self.fk.compute_leg_forward_kinematics(
+                np.concatenate([current_joints[:joint_indices[0]],
+                              joint_angles,
+                              current_joints[joint_indices[-1]+1:]]),
+                leg_side
+            )
+
+            current_pos = current_fk['foot_position']
+            current_orient = current_fk['foot_orientation']
+
+            # Position error
+            pos_error = target_foot_pos - current_pos
+
+            # Orientation error (simplified)
+            orient_error = target_foot_orient - current_orient
+            # Wrap angles to [-pi, pi]
+            orient_error = np.arctan2(np.sin(orient_error), np.cos(orient_error))
+
+            # Check convergence
+            pos_norm = np.linalg.norm(pos_error)
+            orient_norm = np.linalg.norm(orient_error)
+
+            if pos_norm < self.position_tolerance and orient_norm < self.orientation_tolerance:
+                print(f"IK converged in {iteration} iterations")
+                break
+
+            # Compute Jacobian
+            J = self.compute_leg_jacobian(joint_angles, leg_side)
+
+            # Combine position and orientation errors
+            error_vector = np.concatenate([pos_error, orient_error * 0.1])  # Weight orientation less
+
+            # Damped least squares solution
+            J_T = J.T
+            JJT_damped = J @ J_T + self.damping_factor**2 * np.eye(J.shape[0])
+
+            try:
+                delta_angles = J_T @ np.linalg.solve(JJT_damped, error_vector)
+            except np.linalg.LinAlgError:
+                # Fallback to pseudo-inverse
+                delta_angles = np.linalg.pinv(J) @ error_vector
+
+            # Update joint angles
+            joint_angles += delta_angles
+
+            # Apply joint limits
+            for i, joint_idx in enumerate(joint_indices):
+                joint_limits = self.joint_limits[self.robot_config['joint_names'][joint_idx]]
+                joint_angles[i] = np.clip(joint_angles[i], joint_limits[0], joint_limits[1])
+
+        # Create full joint vector with updated leg joints
+        full_joints = current_joints.copy()
+        full_joints[joint_indices] = joint_angles
+
+        return full_joints, {
+            'final_position': current_pos,
+            'final_orientation': current_orient,
+            'position_error': pos_norm,
+            'orientation_error': orient_norm,
+            'iterations': iteration + 1
+        }
+
+    def compute_leg_jacobian(self, joint_angles, leg_side):
+        """Compute Jacobian matrix for leg using numerical differentiation"""
+        epsilon = 1e-6
+        num_joints = len(joint_angles)
+
+        # Current joint vector
+        if leg_side == 'left':
+            full_joints = np.zeros(self.num_joints)
+            full_joints[0:6] = joint_angles
+        else:
+            full_joints = np.zeros(self.num_joints)
+            full_joints[6:12] = joint_angles
+
+        # Current forward kinematics
+        current_fk = self.fk.compute_leg_forward_kinematics(full_joints, leg_side)
+        current_pos = current_fk['foot_position']
+        current_orient = current_fk['foot_orientation']
+
+        # Initialize Jacobian (6 for pose, num_joints for joints)
+        J = np.zeros((6, num_joints))
+
+        # Numerical differentiation
+        for i in range(num_joints):
+            # Perturb joint i
+            full_joints_perturbed = full_joints.copy()
+
+            if leg_side == 'left':
+                full_joints_perturbed[i] += epsilon
+            else:
+                full_joints_perturbed[i + 6] += epsilon
+
+            # Forward kinematics with perturbed joint
+            perturbed_fk = self.fk.compute_leg_forward_kinematics(full_joints_perturbed, leg_side)
+            perturbed_pos = perturbed_fk['foot_position']
+            perturbed_orient = perturbed_fk['foot_orientation']
+
+            # Compute numerical derivatives
+            J[0:3, i] = (perturbed_pos - current_pos) / epsilon
+
+            # Orientation derivatives (handle angle wrapping)
+            orient_diff = perturbed_orient - current_orient
+            orient_diff = np.arctan2(np.sin(orient_diff), np.cos(orient_diff))
+            J[3:6, i] = orient_diff / epsilon
+
+        return J
+
+    def solve_whole_body_ik(self, targets):
+        """
+        Solve IK for whole body with multiple targets
+        targets: dict with keys 'left_foot', 'right_foot', 'left_hand', 'right_hand', 'head'
+        """
+        # This is a complex optimization problem
+        # We'll use a weighted approach with prioritized tasks
+
+        current_joints = np.zeros(self.num_joints)  # Start from neutral position
+
+        # Define task priorities and weights
+        tasks = []
+
+        if 'left_foot' in targets:
+            tasks.append({
+                'type': 'leg',
+                'side': 'left',
+                'target': targets['left_foot'],
+                'weight': 1.0,
+                'priority': 1
+            })
+
+        if 'right_foot' in targets:
+            tasks.append({
+                'type': 'leg',
+                'side': 'right',
+                'target': targets['right_foot'],
+                'weight': 1.0,
+                'priority': 1
+            })
+
+        if 'left_hand' in targets:
+            tasks.append({
+                'type': 'arm',
+                'side': 'left',
+                'target': targets['left_hand'],
+                'weight': 0.5,
+                'priority': 2
+            })
+
+        # Solve tasks in priority order
+        for task in sorted(tasks, key=lambda x: x['priority']):
+            if task['type'] == 'leg':
+                current_joints, result = self.solve_leg_ik(
+                    task['target']['position'],
+                    task['target']['orientation'],
+                    current_joints,
+                    task['side']
+                )
+            elif task['type'] == 'arm':
+                current_joints, result = self.solve_arm_ik(
+                    task['target']['position'],
+                    task['target']['orientation'],
+                    current_joints,
+                    task['side']
+                )
+
+        return current_joints
+```
+
+## Bipedal Locomotion
+
+### Gait Planning
+
+Gait planning generates coordinated leg movements for stable walking:
+
+```python
+# Bipedal gait planning and pattern generation
+class BipedalGaitPlanner:
+    def __init__(self, robot_config):
+        self.robot_config = robot_config
+        self.step_length = robot_config['default_step_length']
+        self.step_height = robot_config['default_step_height']
+        self.step_duration = robot_config['default_step_duration']
+        self.double_support_time = robot_config['double_support_time']
+
+        # Gait parameters
+        self.current_phase = 0.0  # 0 to 1, where 0.5 is mid-swing
+        self.support_foot = 'left'  # Which foot is currently in support
+        self.gait_type = 'walking'  # walking, standing, turning
+
+    def generate_foot_trajectory(self, foot_start_pos, foot_end_pos, t_normalized):
+        """
+        Generate foot trajectory using cubic spline for smooth motion
+        t_normalized: 0 to 1, where 0 is start and 1 is end
+        """
+        # Cubic spline for smooth acceleration/deceleration
+        # s(t) = 3t² - 2t³ for smooth S-curve
+
+        s = 3 * t_normalized**2 - 2 * t_normalized**3
+
+        # Horizontal position (linear interpolation)
+        foot_pos_x = foot_start_pos[0] + s * (foot_end_pos[0] - foot_start_pos[0])
+        foot_pos_y = foot_start_pos[1] + s * (foot_end_pos[1] - foot_start_pos[1])
+
+        # Vertical position (parabolic for foot clearance)
+        # Maximum height at t = 0.5
+        if 0.0 <= t_normalized <= 1.0:
+            foot_height = 4 * self.step_height * t_normalized * (1 - t_normalized)
+        else:
+            foot_height = 0.0
+
+        return np.array([foot_pos_x, foot_pos_y, foot_start_pos[2] + foot_height])
+
+    def generate_walking_gait(self, current_com_pos, desired_velocity, dt):
+        """
+        Generate walking gait pattern for given desired velocity
+        Returns target positions for both feet
+        """
+        # Update gait phase
+        self.current_phase += dt / self.step_duration
+
+        if self.current_phase >= 1.0:
+            self.current_phase -= 1.0
+            # Switch support foot
+            self.support_foot = 'right' if self.support_foot == 'left' else 'left'
+
+        # Determine current state
+        if self.current_phase < 0.5:
+            # Single support phase
+            if self.support_foot == 'left':
+                swing_foot = 'right'
+            else:
+                swing_foot = 'left'
+
+            t_phase = self.current_phase / 0.5  # Normalize to [0, 1]
+            in_double_support = False
+
+        else:
+            # Double support phase
+            t_phase = (self.current_phase - 0.5) / 0.5
+            swing_foot = None
+            in_double_support = True
+
+        # Generate target positions
+        targets = {}
+
+        # Support foot remains stationary
+        if self.support_foot == 'left':
+            targets['left_foot'] = current_com_pos + np.array([-self.robot_config['hip_width']/2, 0, 0])
+        else:
+            targets['right_foot'] = current_com_pos + np.array([self.robot_config['hip_width']/2, 0, 0])
+
+        # Swing foot trajectory
+        if not in_double_support:
+            swing_start_pos = targets[swing_foot + '_foot'] - np.array([desired_velocity[0] * self.step_duration, 0, 0])
+            swing_end_pos = targets[swing_foot + '_foot'] + np.array([desired_velocity[0] * self.step_duration, 0, 0])
+
+            targets[swing_foot + '_foot'] = self.generate_foot_trajectory(
+                swing_start_pos, swing_end_pos, t_phase
+            )
+        else:
+            # Double support - keep both feet at target positions
+            other_foot = 'right' if self.support_foot == 'left' else 'left'
+            targets[other_foot + '_foot'] = current_com_pos + np.array([
+                -self.robot_config['hip_width']/2 if other_foot == 'left' else self.robot_config['hip_width']/2,
+                desired_velocity[0] * self.step_duration,
+                0
+            ])
+
+        return targets, {
+            'phase': self.current_phase,
+            'support_foot': self.support_foot,
+            'in_double_support': in_double_support,
+            'gait_type': self.gait_type
+        }
+
+    def generate_turning_gait(self, current_com_pos, turn_angle, dt):
+        """Generate gait for turning in place"""
+        # Similar to walking but with lateral foot displacement for turning
+        self.current_phase += dt / self.step_duration
+
+        if self.current_phase >= 1.0:
+            self.current_phase -= 1.0
+            self.support_foot = 'right' if self.support_foot == 'left' else 'left'
+
+        targets = {}
+
+        # Calculate turning radius and foot placement
+        turn_radius = self.robot_config['hip_width'] / (2 * np.tan(turn_angle / 2))
+
+        if self.support_foot == 'left':
+            # Left foot is pivot
+            targets['left_foot'] = current_com_pos + np.array([-self.robot_config['hip_width']/2, 0, 0])
+
+            # Right foot swings in arc
+            angle_offset = turn_angle * self.current_phase
+            right_foot_x = self.robot_config['hip_width']/2 * np.cos(angle_offset)
+            right_foot_y = self.robot_config['hip_width']/2 * np.sin(angle_offset)
+
+            targets['right_foot'] = current_com_pos + np.array([right_foot_x, right_foot_y, 0])
+        else:
+            # Right foot is pivot
+            targets['right_foot'] = current_com_pos + np.array([self.robot_config['hip_width']/2, 0, 0])
+
+            # Left foot swings in arc
+            angle_offset = -turn_angle * self.current_phase
+            left_foot_x = -self.robot_config['hip_width']/2 * np.cos(angle_offset)
+            left_foot_y = -self.robot_config['hip_width']/2 * np.sin(angle_offset)
+
+            targets['left_foot'] = current_com_pos + np.array([left_foot_x, left_foot_y, 0])
+
+        return targets
+
+    def generate_standing_gait(self, current_com_pos):
+        """Generate standing pose with slight weight shifting"""
+        targets = {
+            'left_foot': current_com_pos + np.array([-self.robot_config['hip_width']/2, 0, 0]),
+            'right_foot': current_com_pos + np.array([self.robot_config['hip_width']/2, 0, 0])
+        }
+
+        return targets
+```
+
+### Center of Mass Control
+
+Maintaining balance through center of mass control:
+
+```python
+# Center of Mass control and balance maintenance
+class COMController:
+    def __init__(self, robot_config):
+        self.robot_config = robot_config
+        self.com_height = robot_config['com_height']
+        self.mass = robot_config['total_mass']
+
+        # Control parameters
+        self.kp_com = np.array([100.0, 100.0, 500.0])  # Position gains
+        self.kd_com = np.array([20.0, 20.0, 100.0])   # Velocity gains
+        self.ki_com = np.array([1.0, 1.0, 5.0])       # Integral gains
+
+        # ZMP (Zero Moment Point) parameters
+        self.zmp_x_limits = [-0.1, 0.1]  # meters from foot center
+        self.zmp_y_limits = [-0.05, 0.05]
+
+        # State estimation
+        self.com_integral_error = np.zeros(3)
+        self.com_prev_error = np.zeros(3)
+
+    def compute_com_target(self, foot_positions, gait_phase, support_foot):
+        """Compute target center of mass position based on foot support"""
+        if gait_phase < 0.5:  # Single support
+            # COM should be over support foot
+            if support_foot == 'left':
+                com_target = foot_positions['left_foot'].copy()
+            else:
+                com_target = foot_positions['right_foot'].copy()
+
+            # Add forward offset for stability
+            com_target[1] += 0.05  # 5cm forward
+
+        else:  # Double support
+            # COM should be between feet
+            com_target = (foot_positions['left_foot'] + foot_positions['right_foot']) / 2
+
+            # Smooth transition between feet
+            transition_phase = (gait_phase - 0.5) / 0.5  # 0 to 1
+            if support_foot == 'left':
+                # Moving from left to right support
+                weight_distribution = 1.0 - transition_phase
+            else:
+                # Moving from right to left support
+                weight_distribution = transition_phase
+
+            com_target = (weight_distribution * foot_positions['left_foot'] +
+                         (1 - weight_distribution) * foot_positions['right_foot'])
+
+        # Maintain desired COM height
+        com_target[2] = self.com_height
+
+        return com_target
+
+    def compute_com_control(self, current_com, current_com_vel, target_com, dt):
+        """Compute COM control forces using PID control"""
+        # Compute errors
+        com_error = target_com - current_com
+        com_vel_error = -current_com_vel  # Target velocity is zero
+
+        # PID control
+        com_control_force = (self.kp_com * com_error +
+                           self.kd_com * com_vel_error +
+                           self.ki_com * self.com_integral_error)
+
+        # Update integral term
+        self.com_integral_error += com_error * dt
+
+        # Anti-windup for integral term
+        max_integral = 0.1
+        self.com_integral_error = np.clip(self.com_integral_error, -max_integral, max_integral)
+
+        # Store previous error
+        self.com_prev_error = com_error.copy()
+
+        return com_control_force
+
+    def compute_zmp(self, com_pos, com_accel, external_forces=None):
+        """
+        Compute Zero Moment Point for balance checking
+        ZMP = COM - (COM_height / gravity) * COM_acceleration
+        """
+        gravity = 9.81
+
+        zmp = com_pos.copy()
+        zmp[0] -= (self.com_height / gravity) * com_accel[0]
+        zmp[1] -= (self.com_height / gravity) * com_accel[1]
+
+        return zmp
+
+    def check_balance_stability(self, zmp, support_polygon):
+        """
+        Check if ZMP is within support polygon for stability
+        support_polygon: list of points defining foot contact area
+        """
+        # Simple rectangular support polygon check
+        # In practice, this would be a point-in-polygon test
+
+        x_min = min(p[0] for p in support_polygon)
+        x_max = max(p[0] for p in support_polygon)
+        y_min = min(p[1] for p in support_polygon)
+        y_max = max(p[1] for p in support_polygon)
+
+        stable = (x_min <= zmp[0] <= x_max and y_min <= zmp[1] <= y_max)
+
+        # Compute margin of stability
+        margin_x = min(zmp[0] - x_min, x_max - zmp[0]) if stable else -min(abs(zmp[0] - x_min), abs(x_max - zmp[0]))
+        margin_y = min(zmp[1] - y_min, y_max - zmp[1]) if stable else -min(abs(zmp[1] - y_min), abs(y_max - zmp[1]))
+
+        return stable, {'margin_x': margin_x, 'margin_y': margin_y}
+
+    def get_support_polygon(self, foot_positions, support_foot, gait_phase):
+        """Get current support polygon based on foot contacts"""
+        if gait_phase < 0.5:  # Single support
+            if support_foot == 'left':
+                foot_center = foot_positions['left_foot']
+            else:
+                foot_center = foot_positions['right_foot']
+
+            # Simple rectangular foot support
+            foot_length = self.robot_config['foot_length']
+            foot_width = self.robot_config['foot_width']
+
+            support_polygon = [
+                [foot_center[0] - foot_length/2, foot_center[1] - foot_width/2],
+                [foot_center[0] + foot_length/2, foot_center[1] - foot_width/2],
+                [foot_center[0] + foot_length/2, foot_center[1] + foot_width/2],
+                [foot_center[0] - foot_length/2, foot_center[1] + foot_width/2]
+            ]
+        else:  # Double support
+            # Polygon includes both feet
+            left_foot = foot_positions['left_foot']
+            right_foot = foot_positions['right_foot']
+
+            foot_length = self.robot_config['foot_length']
+            foot_width = self.robot_config['foot_width']
+
+            # Create convex hull of both feet
+            support_polygon = [
+                [left_foot[0] - foot_length/2, left_foot[1] - foot_width/2],
+                [left_foot[0] + foot_length/2, left_foot[1] - foot_width/2],
+                [right_foot[0] + foot_length/2, right_foot[1] - foot_width/2],
+                [right_foot[0] + foot_length/2, right_foot[1] + foot_width/2],
+                [left_foot[0] + foot_length/2, left_foot[1] + foot_width/2],
+                [left_foot[0] - foot_length/2, left_foot[1] + foot_width/2]
+            ]
+
+        return support_polygon
+```
+
+## Whole-Body Control
+
+### Hierarchical Control Architecture
+
+Organized control from high-level tasks to low-level joint control:
+
+```python
+# Hierarchical whole-body control for humanoid robots
+class WholeBodyController:
+    def __init__(self, robot_config):
+        self.robot_config = robot_config
+
+        # Initialize sub-controllers
+        self.ik_solver = HumanoidInverseKinematics(None, robot_config)
+        self.gait_planner = BipedalGaitPlanner(robot_config)
+        self.com_controller = COMController(robot_config)
+        self.posture_controller = PostureController(robot_config)
+
+        # Control hierarchy
+        self.task_controller = TaskController()
+        self.coordination_controller = CoordinationController()
+        self.joint_controller = JointController(robot_config)
+
+        # State estimation
+        self.state_estimator = StateEstimator(robot_config)
+
+        # Safety and constraints
+        self.safety_monitor = SafetyMonitor(robot_config)
+        self.constraint_manager = ConstraintManager(robot_config)
+
+    def update(self, dt, sensor_data, task_commands):
+        """
+        Main update loop for whole-body control
+        Returns joint commands for all actuators
+        """
+        # 1. State estimation
+        current_state = self.state_estimator.update(sensor_data)
+
+        # 2. Safety monitoring
+        safety_status = self.safety_monitor.check_safety(current_state)
+        if not safety_status['safe']:
+            return self.emergency_stop()
+
+        # 3. Task-level control
+        task_targets = self.task_controller.compute_targets(task_commands, current_state)
+
+        # 4. Gait planning
+        gait_targets, gait_info = self.gait_planner.generate_walking_gait(
+            current_state['com_position'],
+            task_commands.get('desired_velocity', np.array([0.0, 0.0])),
+            dt
+        )
+
+        # 5. COM control
+        com_target = self.com_controller.compute_com_target(
+            gait_targets, gait_info['phase'], gait_info['support_foot']
+        )
+
+        com_control_force = self.com_controller.compute_com_control(
+            current_state['com_position'],
+            current_state['com_velocity'],
+            com_target,
+            dt
+        )
+
+        # 6. Coordination between tasks
+        coordinated_targets = self.coordination_controller.coordinate_targets(
+            gait_targets, task_targets, current_state
+        )
+
+        # 7. Inverse kinematics
+        joint_targets, ik_results = self.ik_solver.solve_whole_body_ik(coordinated_targets)
+
+        # 8. Apply constraints
+        constrained_joint_targets = self.constraint_manager.apply_constraints(
+            joint_targets, current_state
+        )
+
+        # 9. Joint-level control
+        joint_commands = self.joint_controller.compute_commands(
+            constrained_joint_targets, current_state, dt
+        )
+
+        return {
+            'joint_commands': joint_commands,
+            'com_target': com_target,
+            'gait_info': gait_info,
+            'ik_results': ik_results,
+            'safety_status': safety_status
+        }
+
+    def emergency_stop(self):
+        """Generate emergency stop commands"""
+        # Hold current positions with stiff control
+        return {
+            'joint_commands': {'mode': 'position_hold'},
+            'safety_status': {'safe': False, 'reason': 'emergency_stop'}
+        }
+
+
+class TaskController:
+    def __init__(self):
+        self.active_tasks = []
+        self.task_priorities = {}
+
+    def compute_targets(self, task_commands, current_state):
+        """Compute task-space targets based on high-level commands"""
+        targets = {}
+
+        # Walking task
+        if 'walk' in task_commands:
+            walk_cmd = task_commands['walk']
+            targets['walk_velocity'] = np.array([walk_cmd['forward'], walk_cmd['lateral']])
+            targets['walk_duration'] = walk_cmd.get('duration', None)
+
+        # Hand reaching task
+        if 'reach' in task_commands:
+            reach_cmd = task_commands['reach']
+            if reach_cmd['arm'] == 'left':
+                targets['left_hand'] = {
+                    'position': reach_cmd['target_position'],
+                    'orientation': reach_cmd.get('target_orientation', [0, 0, 0])
+                }
+            else:
+                targets['right_hand'] = {
+                    'position': reach_cmd['target_position'],
+                    'orientation': reach_cmd.get('target_orientation', [0, 0, 0])
+                }
+
+        # Head orientation task
+        if 'look_at' in task_commands:
+            targets['head'] = {
+                'orientation': task_commands['look_at']['target_orientation']
+            }
+
+        # Posture task
+        targets['posture'] = task_commands.get('posture', 'standing')
+
+        return targets
+
+
+class CoordinationController:
+    def __init__(self):
+        self.coordination_weights = {
+            'feet': 1.0,      # Highest priority
+            'com': 0.8,
+            'hands': 0.5,     # Lower priority
+            'head': 0.3
+        }
+
+    def coordinate_targets(self, gait_targets, task_targets, current_state):
+        """Coordinate between multiple potentially conflicting targets"""
+        coordinated_targets = {}
+
+        # Start with gait targets (highest priority)
+        coordinated_targets.update(gait_targets)
+
+        # Add other targets with priority-based modification
+        if 'left_hand' in task_targets:
+            # Check if hand target conflicts with balance
+            hand_target = task_targets['left_hand']
+            if self.is_hand_target_safe(hand_target, coordinated_targets, current_state):
+                coordinated_targets['left_hand'] = hand_target
+            else:
+                # Modify target to maintain balance
+                coordinated_targets['left_hand'] = self.modify_hand_target_for_balance(
+                    hand_target, coordinated_targets, current_state
+                )
+
+        if 'right_hand' in task_targets:
+            hand_target = task_targets['right_hand']
+            if self.is_hand_target_safe(hand_target, coordinated_targets, current_state):
+                coordinated_targets['right_hand'] = hand_target
+            else:
+                coordinated_targets['right_hand'] = self.modify_hand_target_for_balance(
+                    hand_target, coordinated_targets, current_state
+                )
+
+        return coordinated_targets
+
+    def is_hand_target_safe(self, hand_target, foot_targets, current_state):
+        """Check if hand target compromises balance"""
+        # Simple heuristic: hand should not extend too far from base of support
+        max_reach = 0.7  # meters
+
+        com_pos = current_state['com_position']
+        hand_distance = np.linalg.norm(hand_target['position'] - com_pos)
+
+        return hand_distance < max_reach
+
+    def modify_hand_target_for_balance(self, hand_target, foot_targets, current_state):
+        """Modify hand target to maintain balance"""
+        # Move target closer to body
+        com_pos = current_state['com_position']
+        direction = hand_target['position'] - com_pos
+        direction_norm = direction / np.linalg.norm(direction)
+
+        max_reach = 0.7
+        modified_position = com_pos + direction_norm * max_reach * 0.9
+
+        return {
+            'position': modified_position,
+            'orientation': hand_target['orientation']
+        }
+
+
+class JointController:
+    def __init__(self, robot_config):
+        self.robot_config = robot_config
+
+        # PD control gains for each joint
+        self.kp = {}
+        self.kd = {}
+
+        for joint_name in robot_config['joint_names']:
+            self.kp[joint_name] = robot_config['joint_gains'][joint_name]['kp']
+            self.kd[joint_name] = robot_config['joint_gains'][joint_name]['kd']
+
+    def compute_commands(self, joint_targets, current_state, dt):
+        """Compute joint-level control commands"""
+        joint_commands = {}
+        current_joints = current_state['joint_positions']
+        current_velocities = current_state['joint_velocities']
+
+        for i, joint_name in enumerate(self.robot_config['joint_names']):
+            target_position = joint_targets[i]
+            current_position = current_joints[i]
+            current_velocity = current_velocities[i]
+
+            # PD control
+            position_error = target_position - current_position
+            velocity_error = -current_velocity  # Target velocity is zero
+
+            # Handle angle wrapping for revolute joints
+            if 'joint' in joint_name.lower():  # Assume revolute joints
+                position_error = np.arctan2(np.sin(position_error), np.cos(position_error))
+
+            torque = (self.kp[joint_name] * position_error +
+                     self.kd[joint_name] * velocity_error)
+
+            joint_commands[joint_name] = {
+                'mode': 'torque_control',
+                'torque': torque
+            }
+
+        return joint_commands
+
+
+class SafetyMonitor:
+    def __init__(self, robot_config):
+        self.robot_config = robot_config
+        self.joint_limits = robot_config['joint_limits']
+        self.max_joint_velocities = robot_config['max_joint_velocities']
+        self.max_joint_torques = robot_config['max_joint_torques']
+
+    def check_safety(self, current_state):
+        """Check all safety constraints"""
+        safety_status = {'safe': True, 'warnings': [], 'errors': []}
+
+        # Check joint limits
+        for i, joint_name in enumerate(self.robot_config['joint_names']):
+            position = current_state['joint_positions'][i]
+            velocity = current_state['joint_velocities'][i]
+            torque = current_state.get('joint_torques', [0]*len(self.robot_config['joint_names']))[i]
+
+            # Position limits
+            limits = self.joint_limits[joint_name]
+            if position < limits[0] - 0.01 or position > limits[1] + 0.01:
+                safety_status['safe'] = False
+                safety_status['errors'].append(f"Joint {joint_name} position limit exceeded")
+
+            # Velocity limits
+            if abs(velocity) > self.max_joint_velocities[joint_name]:
+                safety_status['safe'] = False
+                safety_status['errors'].append(f"Joint {joint_name} velocity limit exceeded")
+
+            # Torque limits
+            if abs(torque) > self.max_joint_torques[joint_name]:
+                safety_status['safe'] = False
+                safety_status['errors'].append(f"Joint {joint_name} torque limit exceeded")
+
+        # Check COM height (prevent falling)
+        com_height = current_state['com_position'][2]
+        if com_height < self.robot_config['min_com_height']:
+            safety_status['safe'] = False
+            safety_status['errors'].append("COM too low - risk of falling")
+
+        # Check angular momentum (prevent excessive rotation)
+        angular_momentum = current_state.get('angular_momentum', np.zeros(3))
+        if np.linalg.norm(angular_momentum) > self.robot_config['max_angular_momentum']:
+            safety_status['safe'] = False
+            safety_status['errors'].append("Excessive angular momentum")
+
+        return safety_status
+```
+
+## Performance Optimization
+
+### Real-Time Implementation
+
+Optimizations for real-time humanoid control:
+
+```python
+# Real-time optimizations for humanoid control
+class RealTimeOptimizer:
+    def __init__(self, robot_config):
+        self.robot_config = robot_config
+
+        # Pre-compute common quantities
+        self.precomputed_matrices = {}
+        self.lookup_tables = {}
+
+        # Initialize optimization structures
+        self.initialize_precomputations()
+
+        # Memory management
+        self.allocated_buffers = {}
+        self.initialize_memory_buffers()
+
+    def initialize_precomputations(self):
+        """Pre-compute expensive calculations"""
+        # Pre-compute transformation matrices for common joint configurations
+        joint_angles_grid = np.linspace(-np.pi, np.pi, 100)
+
+        for joint_name in self.robot_config['joint_names']:
+            self.lookup_tables[joint_name + '_sin'] = np.sin(joint_angles_grid)
+            self.lookup_tables[joint_name + '_cos'] = np.cos(joint_angles_grid)
+
+    def fast_joint_angle_lookup(self, joint_name, angle):
+        """Fast sin/cos lookup for joint angles"""
+        # Normalize angle to [0, 2π]
+        normalized_angle = (angle + np.pi) % (2 * np.pi)
+
+        # Find nearest pre-computed values
+        index = int(normalized_angle * 100 / (2 * np.pi))
+        index = min(index, 99)  # Bound check
+
+        sin_key = joint_name + '_sin'
+        cos_key = joint_name + '_cos'
+
+        if sin_key in self.lookup_tables:
+            sin_val = self.lookup_tables[sin_key][index]
+            cos_val = self.lookup_tables[cos_key][index]
+
+            # Linear interpolation for better accuracy
+            if index < 99:
+                alpha = (normalized_angle * 100 / (2 * np.pi)) - index
+                sin_val = (1 - alpha) * sin_val + alpha * self.lookup_tables[sin_key][index + 1]
+                cos_val = (1 - alpha) * cos_val + alpha * self.lookup_tables[cos_key][index + 1]
+
+            return sin_val, cos_val
+        else:
+            return np.sin(angle), np.cos(angle)
+
+    def optimized_forward_kinematics(self, joint_angles):
+        """Optimized forward kinematics using pre-computations"""
+        # Use lookups for trigonometric functions
+        transformations = []
+
+        for i, joint_name in enumerate(self.robot_config['joint_names']):
+            angle = joint_angles[i]
+            sin_val, cos_val = self.fast_joint_angle_lookup(joint_name, angle)
+
+            # Build transformation matrix using pre-computed values
+            T = self.build_transformation_matrix(joint_name, sin_val, cos_val)
+            transformations.append(T)
+
+        return transformations
+
+    def parallel_computation(self, tasks):
+        """Execute independent computations in parallel"""
+        # Identify independent tasks
+        independent_tasks = []
+
+        for task in tasks:
+            if task['type'] == 'leg_ik':
+                independent_tasks.append(('left_leg', task['data']))
+                independent_tasks.append(('right_leg', task['data']))
+            elif task['type'] == 'arm_ik':
+                independent_tasks.append(('left_arm', task['data']))
+                independent_tasks.append(('right_arm', task['data']))
+
+        # In practice, this would use multiprocessing or threading
+        # For demonstration, we'll use sequential processing
+        results = {}
+
+        for task_name, task_data in independent_tasks:
+            if 'leg' in task_name:
+                results[task_name] = self.solve_leg_ik_fast(task_data)
+            elif 'arm' in task_name:
+                results[task_name] = self.solve_arm_ik_fast(task_data)
+
+        return results
+
+    def initialize_memory_buffers(self):
+        """Pre-allocate memory for real-time operations"""
+        self.allocated_buffers['joint_angles'] = np.zeros(self.robot_config['num_joints'])
+        self.allocated_buffers['joint_velocities'] = np.zeros(self.robot_config['num_joints'])
+        self.allocated_buffers['transformation_matrix'] = np.eye(4)
+        self.allocated_buffers['jacobian'] = np.zeros((6, self.robot_config['num_joints']))
+        self.allocated_buffers['error_vector'] = np.zeros(6)
+
+    def real_time_update(self, current_state, targets, dt):
+        """Real-time control update with optimizations"""
+        # Use pre-allocated buffers
+        joint_angles = self.allocated_buffers['joint_angles']
+        joint_velocities = self.allocated_buffers['joint_velocities']
+
+        # Copy current state to buffers
+        joint_angles[:] = current_state['joint_positions']
+        joint_velocities[:] = current_state['joint_velocities']
+
+        # Fast forward kinematics
+        transformations = self.optimized_forward_kinematics(joint_angles)
+
+        # Fast IK using optimized methods
+        joint_commands = self.fast_ik_solve(targets, joint_angles, transformations)
+
+        return joint_commands
+
+
+class ModelPredictiveControl:
+    def __init__(self, robot_config, prediction_horizon=1.0, dt=0.01):
+        self.robot_config = robot_config
+        self.prediction_horizon = prediction_horizon
+        self.dt = dt
+        self.num_steps = int(prediction_horizon / dt)
+
+        # MPC optimization parameters
+        self.Q = np.eye(12) * 10  # State cost weights
+        self.R = np.eye(12) * 1   # Control cost weights
+        self.constraints = self.setup_constraints()
+
+    def setup_constraints(self):
+        """Setup MPC constraints"""
+        constraints = {}
+
+        # Joint position constraints
+        constraints['joint_limits'] = []
+        for joint_name in self.robot_config['joint_names']:
+            limits = self.robot_config['joint_limits'][joint_name]
+            constraints['joint_limits'].append(limits)
+
+        # Velocity constraints
+        constraints['velocity_limits'] = []
+        for joint_name in self.robot_config['joint_names']:
+            max_vel = self.robot_config['max_joint_velocities'][joint_name]
+            constraints['velocity_limits'].append([-max_vel, max_vel])
+
+        # Stability constraints (ZMP within support polygon)
+        constraints['zmp_limits'] = {
+            'x': [-0.1, 0.1],  # meters
+            'y': [-0.05, 0.05]
+        }
+
+        return constraints
+
+    def solve_mpc(self, current_state, reference_trajectory):
+        """Solve model predictive control problem"""
+        # This is a simplified MPC solver
+        # In practice, would use specialized optimization libraries
+
+        # Initialize decision variables
+        u_optimal = np.zeros((self.num_steps, 12))  # 12 DOF control inputs
+
+        # Simple MPC optimization (gradient descent)
+        learning_rate = 0.01
+        num_iterations = 50
+
+        for iteration in range(num_iterations):
+            # Predict future states
+            predicted_states = self.predict_trajectory(current_state, u_optimal)
+
+            # Compute cost
+            cost = self.compute_mpc_cost(predicted_states, reference_trajectory, u_optimal)
+
+            # Compute gradients (simplified)
+            gradients = self.compute_mpc_gradients(predicted_states, reference_trajectory, u_optimal)
+
+            # Update control inputs
+            u_optimal -= learning_rate * gradients
+
+            # Apply constraints
+            u_optimal = self.apply_constraints(u_optimal)
+
+        return u_optimal[0]  # Return first control input
+
+    def predict_trajectory(self, initial_state, control_inputs):
+        """Predict future trajectory given control inputs"""
+        states = [initial_state]
+        current_state = initial_state.copy()
+
+        for i in range(self.num_steps):
+            # Simple dynamics model
+            state_dot = self.robot_dynamics(current_state, control_inputs[i])
+            current_state = current_state + state_dot * self.dt
+            states.append(current_state.copy())
+
+        return states[1:]  # Exclude initial state
+
+    def robot_dynamics(self, state, control):
+        """Simplified robot dynamics model"""
+        # In practice, this would be a detailed dynamics model
+        state_dot = np.zeros_like(state)
+
+        # Joint velocities from control torques (simplified)
+        state_dot[:12] = control * 0.1  # Simplified relationship
+
+        return state_dot
+
+    def compute_mpc_cost(self, predicted_states, reference, control_inputs):
+        """Compute MPC cost function"""
+        cost = 0.0
+
+        for i, state in enumerate(predicted_states):
+            if i < len(reference):
+                # State error cost
+                state_error = state - reference[i]
+                cost += state_error.T @ self.Q @ state_error
+
+            # Control effort cost
+            if i < len(control_inputs):
+                cost += control_inputs[i].T @ self.R @ control_inputs[i]
+
+        return cost
+
+    def apply_constraints(self, control_inputs):
+        """Apply constraints to control inputs"""
+        constrained_control = control_inputs.copy()
+
+        # Joint limits
+        for i in range(12):
+            limits = self.constraints['joint_limits'][i]
+            constrained_control[:, i] = np.clip(constrained_control[:, i], limits[0], limits[1])
+
+        # Velocity limits
+        for i in range(12):
+            vel_limits = self.constraints['velocity_limits'][i]
+            constrained_control[:, i] = np.clip(constrained_control[:, i], vel_limits[0], vel_limits[1])
+
+        return constrained_control
+```
+
+## Best Practices and Implementation Guidelines
+
+### Development Workflow
+
+1. **Simulation First**: Always develop and test in simulation before real hardware
+2. **Incremental Complexity**: Start with simple tasks and gradually increase complexity
+3. **Safety Integration**: Implement safety constraints at every control level
+4. **Performance Profiling**: Monitor computational performance for real-time requirements
+
+### Testing and Validation
+
+- **Unit Testing**: Test individual components (IK, gait planning, balance control)
+- **Integration Testing**: Test coordination between components
+- **Hardware-in-the-Loop**: Test with actual robot hardware
+- **Safety Testing**: Verify safety constraints under all conditions
+
+### Performance Optimization
+
+- **Algorithm Selection**: Choose appropriate algorithms for real-time constraints
+- **Memory Management**: Pre-allocate memory and avoid dynamic allocation
+- **Parallel Computing**: Use multi-threading for independent computations
+- **Hardware Acceleration**: Utilize GPU for computationally intensive operations
+
+## Conclusion
+
+Humanoid robot kinematics and control require a sophisticated integration of multiple control strategies:
+
+1. **Mathematical Rigor**: Proper kinematic and dynamic modeling
+2. **Hierarchical Control**: Organized control from task to joint level
+3. **Balance Maintenance**: Continuous center of mass and stability control
+4. **Real-Time Performance**: Optimized algorithms for real-time execution
+5. **Safety Integration**: Comprehensive safety monitoring and constraints
+
+The techniques presented in this module provide a foundation for implementing robust, safe, and efficient control systems for humanoid robots capable of complex locomotion and manipulation tasks.

@@ -1,0 +1,348 @@
+---
+title: Hardware Procurement Tables
+description: Detailed comparison tables and specifications for hardware procurement decisions
+sidebar_label: Procurement Tables
+---
+
+# Hardware Procurement Tables
+
+## Overview
+
+This section provides comprehensive procurement tables and specifications for establishing a Physical AI & Humanoid Robotics laboratory. The tables include detailed comparisons, vendor recommendations, and cost analyses to guide informed procurement decisions.
+
+## GPU Comparison and Specifications
+
+### NVIDIA RTX 40 Series Specifications
+
+| GPU Model | VRAM | Memory Bandwidth | CUDA Cores | Tensor Cores | RT Cores | Power | Estimated Price | Use Case |
+|-----------|------|------------------|-------------|--------------|----------|-------|-----------------|----------|
+| RTX 4060 Ti | 16 GB GDDR6 | 288 GB/s | 4,352 | 68 | 34 | 165W | $400-500 | Basic simulation, light ML training |
+| RTX 4070 Ti | 12 GB GDDR6X | 504 GB/s | 7,680 | 240 | 60 | 285W | $800-900 | Medium Isaac Sim, Unity ROS |
+| RTX 4070 Ti Super | 16 GB GDDR6X | 672 GB/s | 8,448 | 264 | 66 | 285W | $900-1000 | Full Isaac Sim, heavy visualization |
+| RTX 4080 | 16 GB GDDR6X | 716.8 GB/s | 9,728 | 304 | 76 | 320W | $1,200-1,300 | Professional development, large models |
+| RTX 4090 | 24 GB GDDR6X | 1,008 GB/s | 16,384 | 512 | 128 | 450W | $1,600-2,000 | Enterprise simulation, multi-GPU training |
+
+### Professional GPU Series
+
+| GPU Model | VRAM | Memory Bandwidth | CUDA Cores | Tensor Cores | RT Cores | Power | Estimated Price | Key Features |
+|-----------|------|------------------|-------------|--------------|----------|-------|-----------------|--------------|
+| RTX 5000 Ada | 32 GB GDDR6 | 640 GB/s | 12,800 | 400 | 80 | 285W | $2,500-3,000 | ECC memory, VR ready |
+| RTX 6000 Ada | 48 GB GDDR6 with ECC | 960 GB/s | 18,176 | 568 | 142 | 300W | $6,000-8,000 | Large VRAM, professional support |
+| RTX A6000 | 48 GB GDDR6 with ECC | 768 GB/s | 10,752 | 336 | 84 | 300W | $4,500-5,000 | Legacy professional card |
+
+### GPU Procurement Recommendations
+
+**For Academic Labs (5-10 workstations):**
+- **Primary Choice:** RTX 4070 Ti Super (16GB) - $900-1000 per unit
+- **High-End Options:** 1-2 RTX 4090 (24GB) for heavy ML workloads
+- **Entry-Level:** RTX 4060 Ti (16GB) for basic simulation tasks
+
+**For Research Institutions (10+ workstations):**
+- **Standard Configuration:** RTX 4080 (16GB) - $1,200-1,300 per unit
+- **Compute Cluster:** RTX 6000 Ada (48GB) with ECC for reliability
+- **Mixed Strategy:** Combination of RTX 4070 Ti Super and RTX 4090
+
+## CPU Comparison and Specifications
+
+### AMD Ryzen 7000 Series
+
+| Model | Cores/Threads | Base Clock | Boost Clock | L3 Cache | TDP | Estimated Price | Performance Tier |
+|-------|---------------|-------------|-------------|-----------|-----|-----------------|------------------|
+| Ryzen 5 7600X | 6C/12T | 4.7 GHz | 5.3 GHz | 38 MB | 105W | $229-249 | Entry-level |
+| Ryzen 7 7700X | 8C/16T | 4.5 GHz | 5.4 GHz | 40 MB | 105W | $349-379 | Mid-range |
+| Ryzen 9 7900X | 12C/24T | 4.7 GHz | 5.6 GHz | 76 MB | 170W | $549-599 | High-end |
+| Ryzen 9 7950X | 16C/32T | 4.5 GHz | 5.7 GHz | 80 MB | 170W | $699-749 | Enthusiast |
+
+### Intel 13th/14th Gen Core Series
+
+| Model | Cores/Threads | Base Clock | Boost Clock | L3 Cache | TDP | Estimated Price | Performance Tier |
+|-------|---------------|-------------|-------------|-----------|-----|-----------------|------------------|
+| Core i5-13600K | 6P+4E/20T | 3.5 GHz | 5.1 GHz | 24 MB | 125W | $299-329 | Entry-level |
+| Core i7-13700K | 8P+8E/24T | 3.4 GHz | 5.4 GHz | 30 MB | 125W | $399-429 | Mid-range |
+| Core i9-13900K | 8P+16E/32T | 3.0 GHz | 5.8 GHz | 36 MB | 125W | $589-629 | High-end |
+| Core i9-14900K | 8P+16E/32T | 3.2 GHz | 6.0 GHz | 36 MB | 125W | $649-699 | Flagship |
+
+### Professional/Workstation CPUs
+
+| Model | Cores/Threads | Base Clock | Boost Clock | L3 Cache | TDP | Estimated Price | Platform |
+|-------|---------------|-------------|-------------|-----------|-----|-----------------|----------|
+| Threadripper PRO 7975WX | 32C/64T | 3.2 GHz | 5.1 GHz | 128 MB | 350W | $3,499-3,999 | WRX90 |
+| Threadripper PRO 7985WX | 64C/128T | 2.7 GHz | 4.5 GHz | 256 MB | 350W | $9,999-11,999 | WRX90 |
+| Xeon w9-3495X | 36C/72T | 2.3 GHz | 4.8 GHz | 105 MB | 350W | $5,449-5,999 | W790 |
+
+## Memory Configuration Tables
+
+### DDR5 Memory Specifications
+
+| Capacity | Speed | Latency | Modules per Kit | Estimated Price | Recommended For |
+|----------|-------|---------|-----------------|-----------------|----------------|
+| 32 GB (2x16GB) | DDR5-5600 | CL36 | 2 | $80-120 | Entry-level workstations |
+| 64 GB (2x32GB) | DDR5-5600 | CL36 | 2 | $160-200 | Standard configuration |
+| 96 GB (2x48GB) | DDR5-5600 | CL40 | 2 | $280-350 | Heavy simulation workloads |
+| 128 GB (4x32GB) | DDR5-5600 | CL36 | 4 | $320-400 | Professional workstations |
+| 256 GB (4x64GB) | DDR5-5600 | CL40 | 4 | $640-800 | Enterprise configurations |
+
+### Memory Requirements by Use Case
+
+| Use Case | Minimum RAM | Recommended RAM | Reasoning |
+|----------|-------------|-----------------|-----------|
+| Basic ROS 2 Development | 16 GB | 32 GB | Multiple ROS nodes, RViz, Gazebo |
+| Isaac Sim + ML Training | 32 GB | 64 GB | Large scenes, model training |
+| Data Processing + Analysis | 64 GB | 128 GB | Large datasets, concurrent processes |
+| Multi-User Workstation | 64 GB | 128-256 GB | Multiple researchers, resource sharing |
+
+## Storage Solutions Comparison
+
+### Primary NVMe SSD Options
+
+| Model | Capacity | Interface | Read Speed | Write Speed | DWPD | Estimated Price | Use Case |
+|-------|----------|-----------|------------|-------------|------|-----------------|----------|
+| Samsung 980 Pro | 1 TB | PCIe 4.0 NVMe | 7,000 MB/s | 5,000 MB/s | 600 TBW | $120-150 | Primary OS/Apps |
+| WD Black SN850X | 2 TB | PCIe 4.0 NVMe | 7,300 MB/s | 6,600 MB/s | 1,200 TBW | $180-220 | Active projects |
+| Seagate FireCuda 530 | 4 TB | PCIe 4.0 NVMe | 7,300 MB/s | 6,900 MB/s | 2,560 TBW | $380-450 | Large datasets |
+| Samsung 990 Pro | 2 TB | PCIe 5.0 NVMe | 7,450 MB/s | 6,900 MB/s | 1,200 TBW | $200-250 | High-performance |
+
+### Secondary Storage Options
+
+| Type | Model | Capacity | Interface | Speed | Price/GB | Use Case |
+|------|-------|----------|-----------|------|----------|----------|
+| SATA SSD | Crucial MX500 | 4 TB | SATA 3.0 | 560 MB/s | $0.10 | Archive, backup |
+| NVMe SSD | Samsung 970 EVO Plus | 2 TB | PCIe 3.0 NVMe | 3,500 MB/s | $0.12 | Secondary datasets |
+| HDD | Seagate Exos | 8 TB | SATA 3.0 | 285 MB/s | $0.02 | Cold storage, backups |
+
+## Complete Workstation Configurations
+
+### Entry-Level Research Workstation ($1,800-2,200)
+
+| Component | Specification | Estimated Cost |
+|-----------|---------------|----------------|
+| GPU | RTX 4060 Ti 16GB | $450 |
+| CPU | AMD Ryzen 7 7700X | $350 |
+| Memory | 32 GB DDR5-5600 | $120 |
+| Storage | 1 TB NVMe + 2 TB SATA SSD | $280 |
+| Motherboard | B650 Mid-Range | $200 |
+| Power Supply | 850W 80+ Gold | $150 |
+| Case | Mid-Tower with good airflow | $100 |
+| Cooling | High-Performance Air Cooler | $80 |
+| **Total** | | **$1,730** |
+
+### Mid-Range Development Workstation ($3,500-4,000)
+
+| Component | Specification | Estimated Cost |
+|-----------|---------------|----------------|
+| GPU | RTX 4070 Ti Super 16GB | $950 |
+| CPU | AMD Ryzen 9 7900X | $550 |
+| Memory | 64 GB DDR5-5600 | $200 |
+| Storage | 2 TB NVMe + 4 TB SATA SSD | $460 |
+| Motherboard | X670 High-End | $350 |
+| Power Supply | 1000W 80+ Platinum | $200 |
+| Case | Full-Tower with excellent airflow | $200 |
+| Cooling | 360mm AIO Liquid Cooler | $250 |
+| **Total** | | **$3,160** |
+
+### High-End Research Workstation ($6,000-7,000)
+
+| Component | Specification | Estimated Cost |
+|-----------|---------------|----------------|
+| GPU | RTX 4090 24GB | $1,800 |
+| CPU | AMD Ryzen 9 7950X | $700 |
+| Memory | 128 GB DDR5-5600 | $400 |
+| Storage | 4 TB NVMe + 8 TB SATA SSD | $820 |
+| Motherboard | X670E Flagship | $500 |
+| Power Supply | 1200W 80+ Platinum | $250 |
+| Case | Full-Tower with custom water cooling support | $300 |
+| Cooling | Custom Water Cooling Loop | $600 |
+| **Total** | | **$5,370** |
+
+## Edge AI Kit Configurations
+
+### Jetson Orin Nano Developer Kit ($700-900)
+
+| Component | Specification | Estimated Cost |
+|-----------|---------------|----------------|
+| Jetson Module | Orin Nano 8GB | $499 |
+| Carriers | Orin Nano Developer Kit | $199 |
+| Storage | 256 GB microSD + 1 TB NVMe | $120 |
+| Power | 60W USB-C Power Supply | $50 |
+| Case | Passive Cooling Case | $30 |
+| **Total** | | **$898** |
+
+### Jetson Orin NX Robotics Kit ($1,500-2,000)
+
+| Component | Specification | Estimated Cost |
+|-----------|---------------|----------------|
+| Jetson Module | Orin NX 16GB | $999 |
+| Carriers | Orin NX Developer Kit | $299 |
+| Storage | 2 TB NVMe SSD | $180 |
+| Power | 100W Power Supply | $80 |
+| Case | Active Cooling Enclosure | $120 |
+| Cameras | 2x Intel RealSense D435i | $400 |
+| **Total** | | **$2,078** |
+
+### Jetson AGX Orin Production Kit ($3,000-4,000)
+
+| Component | Specification | Estimated Cost |
+|-----------|---------------|----------------|
+| Jetson Module | AGX Orin 64GB | $1,999 |
+| Carriers | AGX Orin Dev Kit | $599 |
+| Storage | 4 TB NVMe SSD | $280 |
+| Power | 150W Power Supply | $150 |
+| Case | Industrial Enclosure | $300 |
+| Sensors | Multi-camera + LiDAR setup | $800 |
+| **Total** | | **$4,128** |
+
+## Networking Infrastructure
+
+### Network Switch Specifications
+
+| Model | Ports | Speed | Management | PoE Budget | Estimated Price | Use Case |
+|-------|-------|-------|-------------|------------|-----------------|----------|
+| Netgear MS510TXUP | 8x 10GbE + 2x 25GbE | 10/25 Gbps | Managed | 370W | $800-1,000 | Small lab |
+| Aruba CX 6300F | 24x 10GbE + 4x 40GbE | 10/40 Gbps | Enterprise | N/A | $3,000-4,000 | Medium lab |
+| Cisco Catalyst 9300 | 48x 10GbE + 4x 40GbE | 10/40 Gbps | Enterprise | N/A | $8,000-12,000 | Large deployment |
+
+### Network Cabling and Infrastructure
+
+| Item | Specification | Quantity | Unit Cost | Total Cost |
+|------|---------------|----------|-----------|------------|
+| Cat6a Patch Cables | 10m, Shielded | 50 | $15 | $750 |
+| Fiber Optic Cables | 10G, LC-LC, 10m | 20 | $50 | $1,000 |
+| Network Racks | 42U, Enclosed | 2 | $1,500 | $3,000 |
+| Patch Panels | Cat6a, 48 Port | 4 | $200 | $800 |
+| Cable Management | Trays, Ladders | 1 set | $500 | $500 |
+
+## Power Infrastructure
+
+### UPS Specifications by Load
+
+| Model | Capacity | Runtime (Full Load) | Outlets | Interface | Estimated Price | Protection Level |
+|-------|----------|--------------------|---------|-----------|-----------------|------------------|
+| APC BR1500MS | 1500 VA / 1000W | 10 min | 10 outlets | USB | $400-500 | Single workstation |
+| Eaton 5PX2200RT | 2200 VA / 1980W | 15 min | 16 outlets | Network card | $1,200-1,500 | Small rack |
+| APC RT3000XL | 3000 VA / 2700W | 20 min | 20 outlets | Network card | $2,500-3,000 | Medium rack |
+
+### Power Distribution Units
+
+| Model | Capacity | Outlets | Metering | Form Factor | Estimated Price |
+|-------|----------|---------|----------|-------------|-----------------|
+| APC AP8853 | 32A 208V | 21 outlets | Basic | 0U Vertical | $400-500 |
+| ServerTech PDV | 30A 208V | 24 outlets | Advanced | 2U Horizontal | $800-1,000 |
+| Vertiv Geist | 16A 120V | 20 outlets | Networked | 1U Rack Mount | $300-400 |
+
+## Cost Summary Tables
+
+### Complete Lab Setup Cost Analysis
+
+#### Small Lab (3-5 Workstations + 1 Robot)
+
+| Category | Item | Quantity | Unit Cost | Total |
+|----------|------|----------|-----------|-------|
+| **Workstations** | Mid-Range Setup | 4 | $3,160 | $12,640 |
+| **Edge AI Kits** | Orin NX Kits | 1 | $2,078 | $2,078 |
+| **Networking** | 10GbE Switch + Cabling | 1 set | $5,550 | $5,550 |
+| **Power Infrastructure** | UPS + PDU | 1 set | $1,800 | $1,800 |
+| **Furniture** | Desks + Chairs | 4 | $800 | $3,200 |
+| **Software Licenses** | OS + Development Tools | 5 | $300 | $1,500 |
+| **Contingency (15%)** | | | | $4,608 |
+| **Total** | | | | **$31,376** |
+
+#### Medium Lab (8-12 Workstations + 2-3 Robots)
+
+| Category | Item | Quantity | Unit Cost | Total |
+|----------|------|----------|-----------|-------|
+| **Workstations** | High-End Setup | 10 | $5,370 | $53,700 |
+| **Edge AI Kits** | AGX Orin Kits | 3 | $4,128 | $12,384 |
+| **Networking** | 25GbE Core + 10GbE Edge | 1 set | $15,000 | $15,000 |
+| **Power Infrastructure** | Rack UPS + PDUs | 1 set | $6,000 | $6,000 |
+| **Furniture** | Workstations + Storage | 12 | $1,200 | $14,400 |
+| **Software Licenses** | Enterprise + Support | 12 | $500 | $6,000 |
+| **Training** | Initial Staff Training | 1 program | $5,000 | $5,000 |
+| **Contingency (15%)** | | | | $17,276 |
+| **Total** | | | | **$129,760** |
+
+#### Large Lab (15-20 Workstations + 5+ Robots)
+
+| Category | Item | Quantity | Unit Cost | Total |
+|----------|------|----------|-----------|-------|
+| **Workstations** | Professional Setup | 18 | $8,500 | $153,000 |
+| **Edge AI Kits** | Custom Production Rigs | 5 | $6,000 | $30,000 |
+| **Networking** | 40/100GbE Core + Redundancy | 1 set | $50,000 | $50,000 |
+| **Power Infrastructure** | Dual UPS + Full Rack PDUs | 1 set | $25,000 | $25,000 |
+| **Furniture** | Lab Furniture + Collaboration Spaces | 20 | $2,000 | $40,000 |
+| **Software Licenses** | Site Licenses + Premium Support | 1 site | $50,000 | $50,000 |
+| **Training** | Comprehensive Program | 1 program | $15,000 | $15,000 |
+| **Professional Services** | Integration + Optimization | 1 project | $25,000 | $25,000 |
+| **Contingency (15%)** | | | | $58,650 |
+| **Total** | | | | **$446,650** |
+
+## Vendor Recommendations
+
+### Preferred Vendors by Category
+
+#### Workstations and Components
+| Vendor | Strengths | Support | Recommended For |
+|--------|----------|---------|------------------|
+| Puget Systems | Custom workstations, excellent testing | Premium US-based support | Research institutions |
+| Maingear | Gaming/professional systems, customization | Good US support | University labs |
+| System76 | Linux-native systems, open-source focus | Community support | Open-source research |
+| Dell Precision | Enterprise support, warranty coverage | Global enterprise support | Large deployments |
+
+#### Networking Equipment
+| Vendor | Product Range | Support Level | Recommended For |
+|--------|---------------|--------------|------------------|
+| Aruba | Enterprise switches, cloud management | Enterprise 24/7 | Academic networks |
+| Cisco | Full enterprise portfolio | Global enterprise | Large deployments |
+| Netgear | Prosumer/Small business | Standard business | Small to medium labs |
+
+#### Edge AI Hardware
+| Vendor | Product Line | Ecosystem Support | Recommended For |
+|--------|--------------|------------------|------------------|
+| NVIDIA | Jetson Orin series | CUDA, TensorRT, DeepStream | All robotics applications |
+| Seeed Studio | Jetson carrier boards | Custom robotics solutions | Custom integrations |
+| Connect Tech | Industrial Jetson carriers | Harsh environment support | Industrial deployments |
+
+### Procurement Best Practices
+
+#### Volume Purchasing Considerations
+
+1. **Educational Discounts**
+   - NVIDIA: 10-20% educational pricing
+   - Dell: Academic purchasing programs
+   - CDW-G: Government and education contracts
+
+2. **Bulk Ordering Strategies**
+   - Order in quantities of 5+ for better pricing
+   - Consider annual contracts for consumables
+   - Bundle hardware with service contracts
+
+3. **Warranty and Support**
+   - 3-year warranties for critical infrastructure
+   - Next business day on-site support for large deployments
+   - Extended support for GPU components
+
+4. **Total Cost of Ownership**
+   - Factor in 5-year lifecycle costs
+   - Include power consumption estimates
+   - Budget for periodic upgrades and replacements
+
+#### Implementation Timeline
+
+| Phase | Duration | Key Activities | Critical Path Items |
+|-------|----------|----------------|---------------------|
+| Planning | 2-4 weeks | Requirements finalization, vendor selection | Budget approval |
+| Procurement | 6-10 weeks | Order placement, logistics, receiving | GPU availability |
+| Infrastructure | 4-6 weeks | Power, cooling, network installation | Facility readiness |
+| Integration | 6-8 weeks | System assembly, software installation | Custom configurations |
+| Testing | 2-4 weeks | Performance validation, user training | System acceptance |
+
+## Conclusion
+
+The procurement tables and specifications provided above enable informed decision-making for establishing comprehensive Physical AI & Humanoid Robotics laboratories. Key considerations include:
+
+1. **Balanced Performance**: Matching GPU, CPU, and memory capabilities to specific research needs
+2. **Scalability**: Designing infrastructure that can grow with research requirements
+3. **Reliability**: Selecting enterprise-grade components with appropriate support contracts
+4. **Total Cost of Ownership**: Considering lifecycle costs beyond initial procurement
+5. **Future-Proofing**: Investing in upgradeable components and standardized interfaces
+
+These specifications represent current market conditions as of 2024 and should be regularly updated based on technological advances and market dynamics.

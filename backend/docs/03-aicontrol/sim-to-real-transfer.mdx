@@ -1,0 +1,1222 @@
+---
+title: Sim-to-Real Transfer Techniques
+description: Methods for transferring simulation-trained policies to real robots
+sidebar_label: Sim-to-Real Transfer
+---
+
+# Sim-to-Real Transfer Techniques
+
+## Overview
+
+Sim-to-Real transfer is one of the most critical challenges in modern robotics, enabling AI models trained in simulation to effectively operate on physical robots. This module covers comprehensive techniques for bridging the reality gap, from domain randomization to progressive learning approaches that ensure robust deployment in real-world environments.
+
+## The Reality Gap
+
+### Understanding the Simulation-Reality Discrepancy
+
+The reality gap encompasses differences between simulated and physical environments that can cause trained policies to fail when deployed:
+
+```python
+# Reality gap analysis framework
+class RealityGapAnalyzer:
+    def __init__(self):
+        self.gap_categories = {
+            'visual_differences': {
+                'lighting_variations': 'Illumination changes and shadows',
+                'texture_realism': 'Material properties and surface details',
+                'sensor_noise': 'Real sensor imperfections and artifacts'
+            },
+            'physical_differences': {
+                'dynamics_mismatch': 'Mass, friction, and inertia discrepancies',
+                'actuator_lag': 'Real motor delays and bandwidth limitations',
+                'compliance': 'Structural flexibility and joint compliance'
+            },
+            'environmental_factors': {
+                'disturbances': 'Unpredictable environmental interactions',
+                'localization_errors': 'GPS/IMU inaccuracies and drift',
+                'communication_delays': 'Network latency and packet loss'
+            }
+        }
+
+    def quantify_gap(self, sim_data, real_data):
+        """Quantify differences between simulation and reality"""
+        gap_metrics = {}
+
+        for category, factors in self.gap_categories.items():
+            gap_metrics[category] = {}
+            for factor, description in factors.items():
+                # Calculate discrepancy metrics
+                sim_metric = self.extract_metric(sim_data, factor)
+                real_metric = self.extract_metric(real_data, factor)
+
+                gap_metrics[category][factor] = {
+                    'discrepancy': self.calculate_discrepancy(sim_metric, real_metric),
+                    'impact_level': self.assess_impact(sim_metric, real_metric),
+                    'mitigation_priority': self.prioritize_mitigation(gap_metrics[category][factor])
+                }
+
+        return gap_metrics
+
+    def extract_metric(self, data, factor):
+        """Extract specific metrics from sensor data"""
+        if factor == 'lighting_variations':
+            return data.get('light_intensity', [])
+        elif factor == 'sensor_noise':
+            return data.get('noise_characteristics', [])
+        # ... additional metric extraction methods
+        return []
+```
+
+### Common Failure Modes
+
+**1. Covariate Shift**
+The distribution of states encountered in reality differs from simulation:
+
+```python
+# Covariate shift detection and correction
+class CovariateShiftDetector:
+    def __init__(self, sim_states, real_states):
+        self.sim_states = np.array(sim_states)
+        self.real_states = np.array(real_states)
+
+    def detect_distribution_shift(self):
+        """Detect statistical differences between state distributions"""
+        from scipy import stats
+
+        shift_analysis = {}
+
+        # Kolmogorov-Smirnov test for each state dimension
+        for dim in range(self.sim_states.shape[1]):
+            sim_dim = self.sim_states[:, dim]
+            real_dim = self.real_states[:, dim]
+
+            ks_statistic, p_value = stats.ks_2samp(sim_dim, real_dim)
+
+            shift_analysis[f'dimension_{dim}'] = {
+                'ks_statistic': ks_statistic,
+                'p_value': p_value,
+                'significant_shift': p_value < 0.05,
+                'effect_size': abs(np.mean(sim_dim) - np.mean(real_dim)) / np.std(sim_dim)
+            }
+
+        return shift_analysis
+
+    def estimate_importance_weights(self):
+        """Estimate importance weights for covariate shift correction"""
+        from sklearn.neighbors import KernelDensity
+
+        # Estimate probability densities
+        sim_kde = KernelDensity(bandwidth=1.0).fit(self.sim_states)
+        real_kde = KernelDensity(bandwidth=1.0).fit(self.real_states)
+
+        # Calculate importance weights
+        log_sim_density = sim_kde.score_samples(self.sim_states)
+        log_real_density = real_kde.score_samples(self.sim_states)
+
+        importance_weights = np.exp(log_real_density - log_sim_density)
+
+        # Clip extreme weights to prevent instability
+        importance_weights = np.clip(importance_weights, 0.1, 10.0)
+
+        return importance_weights / np.mean(importance_weights)
+```
+
+**2. Model Misspecification**
+The simulation physics don't accurately represent real-world dynamics:
+
+```python
+# System identification for model correction
+class SystemIdentification:
+    def __init__(self, state_dim, action_dim):
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.residual_model = None
+
+    def learn_dynamics_residual(self, sim_dynamics, real_trajectories):
+        """Learn the difference between simulated and real dynamics"""
+        X_res, y_res = [], []
+
+        for traj in real_trajectories:
+            states = traj['states']
+            actions = traj['actions']
+
+            for i in range(len(states) - 1):
+                # Simulated next state
+                sim_next = sim_dynamics.predict(states[i], actions[i])
+
+                # Real next state
+                real_next = states[i + 1]
+
+                # Residual (difference)
+                residual = real_next - sim_next
+
+                X_res.append(np.concatenate([states[i], actions[i]]))
+                y_res.append(residual)
+
+        # Train residual model
+        from sklearn.ensemble import GradientBoostingRegressor
+        self.residual_model = GradientBoostingRegressor(n_estimators=100)
+        self.residual_model.fit(X_res, y_res)
+
+        return self.residual_model
+
+    def corrected_dynamics(self, state, action):
+        """Apply learned correction to simulated dynamics"""
+        sim_next = self.sim_dynamics.predict(state, action)
+
+        if self.residual_model is not None:
+            input_features = np.concatenate([state, action])
+            correction = self.residual_model.predict([input_features])[0]
+            sim_next += correction
+
+        return sim_next
+```
+
+## Domain Randomization
+
+### Systematic Parameter Randomization
+
+Domain randomization exposes the trained policy to a wide variety of simulated environments to improve generalization:
+
+```python
+# Comprehensive domain randomization framework
+class DomainRandomization:
+    def __init__(self):
+        self.randomization_params = {
+            'visual_randomization': {
+                'lighting': {
+                    'ambient_intensity': (0.2, 1.0),  # Min/max range
+                    'directional_intensity': (0.5, 2.0),
+                    'light_position_variance': 0.5,
+                    'shadow_softness': (0.1, 0.8)
+                },
+                'material_properties': {
+                    'specular_reflectance': (0.0, 0.8),
+                    'roughness': (0.1, 0.9),
+                    'metallic': (0.0, 1.0),
+                    'emission': (0.0, 0.2)
+                },
+                'camera_parameters': {
+                    'exposure': (0.5, 2.0),
+                    'gamma': (0.8, 1.5),
+                    'contrast': (0.7, 1.3),
+                    'saturation': (0.8, 1.2)
+                }
+            },
+            'physics_randomization': {
+                'dynamics': {
+                    'mass_scale': (0.8, 1.2),
+                    'friction_coefficient': (0.3, 0.9),
+                    'restitution': (0.1, 0.8),
+                    'joint_damping': (0.01, 0.2)
+                },
+                'actuators': {
+                    'motor_delay': (0.0, 0.05),  # seconds
+                    'position_gain_scale': (0.7, 1.3),
+                    'velocity_gain_scale': (0.8, 1.2),
+                    'torque_limit_scale': (0.9, 1.1)
+                },
+                'environment': {
+                    'air_resistance': (0.0, 0.5),
+                    'gravity_variation': (0.98, 1.02),
+                    'temperature_effects': (0.95, 1.05)
+                }
+            }
+        }
+
+        self.current_randomization = {}
+
+    def randomize_environment(self, episode_id):
+        """Generate random environment parameters for training"""
+        import random
+
+        self.current_randomization = {}
+
+        for category, params in self.randomization_params.items():
+            self.current_randomization[category] = {}
+
+            for param_group, settings in params.items():
+                self.current_randomization[category][param_group] = {}
+
+                for param, (min_val, max_val) in settings.items():
+                    # Use episode_id for reproducible randomness
+                    random.seed(f"{episode_id}_{category}_{param_group}_{param}")
+
+                    if param == 'light_position_variance':
+                        # Special handling for vector parameters
+                        value = [random.uniform(-min_val, min_val) for _ in range(3)]
+                    else:
+                        value = random.uniform(min_val, max_val)
+
+                    self.current_randomization[category][param_group][param] = value
+
+        return self.current_randomization
+
+    def apply_to_simulation(self, simulation_api):
+        """Apply randomization parameters to simulation environment"""
+        # Visual randomization
+        if 'visual_randomization' in self.current_randomization:
+            vis_params = self.current_randomization['visual_randomization']
+
+            # Lighting adjustments
+            if 'lighting' in vis_params:
+                lighting = vis_params['lighting']
+                simulation_api.set_ambient_light(lighting['ambient_intensity'])
+                simulation_api.set_directional_light(
+                    intensity=lighting['directional_intensity'],
+                    position_offset=lighting['light_position_variance']
+                )
+
+            # Material properties
+            if 'material_properties' in vis_params:
+                materials = vis_params['material_properties']
+                for material_id in simulation_api.get_material_ids():
+                    simulation_api.set_material_properties(material_id, materials)
+
+        # Physics randomization
+        if 'physics_randomization' in self.current_randomization:
+            physics_params = self.current_randomization['physics_randomization']
+
+            # Dynamics adjustments
+            if 'dynamics' in physics_params:
+                dynamics = physics_params['dynamics']
+                for link_id in simulation_api.get_link_ids():
+                    simulation_api.set_link_mass(link_id, dynamics['mass_scale'])
+                    simulation_api.set_link_friction(link_id, dynamics['friction_coefficient'])
+```
+
+### Curriculum Domain Randomization
+
+Progressive randomization that gradually increases difficulty during training:
+
+```python
+# Curriculum-based domain randomization
+class CurriculumDomainRandomization(DomainRandomization):
+    def __init__(self):
+        super().__init__()
+        self.curriculum_stages = [
+            {
+                'stage': 0,
+                'name': 'Deterministic',
+                'randomization_strength': 0.0,
+                'duration_episodes': 1000,
+                'focus_params': ['baseline_stability']
+            },
+            {
+                'stage': 1,
+                'name': 'Light_Variations',
+                'randomization_strength': 0.3,
+                'duration_episodes': 2000,
+                'focus_params': ['visual_randomization.lighting']
+            },
+            {
+                'stage': 2,
+                'name': 'Visual_Randomization',
+                'randomization_strength': 0.5,
+                'duration_episodes': 3000,
+                'focus_params': ['visual_randomization']
+            },
+            {
+                'stage': 3,
+                'name': 'Physics_Variations',
+                'randomization_strength': 0.6,
+                'duration_episodes': 4000,
+                'focus_params': ['visual_randomization', 'physics_randomization.dynamics']
+            },
+            {
+                'stage': 4,
+                'name': 'Full_Randomization',
+                'randomization_strength': 1.0,
+                'duration_episodes': float('inf'),
+                'focus_params': ['visual_randomization', 'physics_randomization']
+            }
+        ]
+        self.current_stage = 0
+        self.episodes_in_stage = 0
+
+    def get_curriculum_randomization(self, episode_id):
+        """Get randomization parameters based on curriculum stage"""
+        # Check if we should advance to next stage
+        if self.episodes_in_stage >= self.curriculum_stages[self.current_stage]['duration_episodes']:
+            self.advance_stage()
+
+        # Get base randomization
+        base_randomization = self.randomize_environment(episode_id)
+
+        # Apply curriculum scaling
+        stage_config = self.curriculum_stages[self.current_stage]
+        strength = stage_config['randomization_strength']
+        focus_params = stage_config['focus_params']
+
+        # Scale down non-focus parameters
+        for category in base_randomization:
+            for param_group in base_randomization[category]:
+                for param_name in base_randomization[category][param_group]:
+                    param_path = f"{category}.{param_group}.{param_name}"
+
+                    if not any(focus in param_path for focus in focus_params):
+                        # Scale down this parameter
+                        original = base_randomization[category][param_group][param_name]
+                        if isinstance(original, (int, float)):
+                            # Interpolate towards default value (typically 1.0)
+                            base_randomization[category][param_group][param_name] = 1.0 + (original - 1.0) * strength
+                        elif isinstance(original, list):
+                            base_randomization[category][param_group][param_name] = [
+                                1.0 + (v - 1.0) * strength for v in original
+                            ]
+
+        self.episodes_in_stage += 1
+        return base_randomization, stage_config['name']
+
+    def advance_stage(self):
+        """Advance to next curriculum stage"""
+        if self.current_stage < len(self.curriculum_stages) - 1:
+            self.current_stage += 1
+            self.episodes_in_stage = 0
+            print(f"Advanced to stage: {self.curriculum_stages[self.current_stage]['name']}")
+```
+
+## System Identification
+
+### Online System Identification
+
+Adapt models online using real-world data:
+
+```python
+# Online system identification for continuous adaptation
+class OnlineSystemIdentifier:
+    def __init__(self, state_dim, action_dim, forgetting_factor=0.95):
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.forgetting_factor = forgetting_factor
+
+        # Adaptive model parameters
+        self.theta = np.random.randn(state_dim * (action_dim + 1)) * 0.01
+        self.P = np.eye(len(self.theta)) * 100.0  # Covariance matrix
+
+        # Data buffer for batch updates
+        self.data_buffer = []
+        self.buffer_size = 1000
+
+    def update_model(self, state, action, next_state):
+        """Update model parameters using Recursive Least Squares"""
+        # Feature vector: [state, action, 1] for affine model
+        phi = np.concatenate([state, action, [1.0]])
+
+        # Prediction error
+        prediction = np.dot(self.theta, phi)
+        error = next_state - prediction
+
+        # RLS update
+        L = self.P @ phi / (self.forgetting_factor + phi @ self.P @ phi)
+        self.theta += L * error
+        self.P = (self.P - np.outer(L, phi @ self.P)) / self.forgetting_factor
+
+        # Store data for validation
+        self.data_buffer.append((state, action, next_state))
+        if len(self.data_buffer) > self.buffer_size:
+            self.data_buffer.pop(0)
+
+    def predict_next_state(self, state, action):
+        """Predict next state using identified model"""
+        phi = np.concatenate([state, action, [1.0]])
+        return np.dot(self.theta, phi)
+
+    def get_model_uncertainty(self, state, action):
+        """Estimate prediction uncertainty"""
+        phi = np.concatenate([state, action, [1.0]])
+        variance = phi @ self.P @ phi
+        return np.sqrt(variance)
+
+    def validate_model(self, validation_data=None):
+        """Validate model performance on recent data"""
+        if validation_data is None:
+            validation_data = self.data_buffer[-100:]  # Use recent data
+
+        if len(validation_data) < 10:
+            return {'mse': float('inf'), 'mae': float('inf'), 'samples': len(validation_data)}
+
+        errors = []
+        for state, action, next_state in validation_data:
+            prediction = self.predict_next_state(state, action)
+            error = np.linalg.norm(next_state - prediction)
+            errors.append(error)
+
+        return {
+            'mse': np.mean([e**2 for e in errors]),
+            'mae': np.mean(errors),
+            'max_error': np.max(errors),
+            'samples': len(validation_data)
+        }
+```
+
+### Meta-Learning for Fast Adaptation
+
+Use meta-learning to enable rapid adaptation to new environments:
+
+```python
+# Model-Agnostic Meta-Learning (MAML) for sim-to-real adaptation
+class MAMLAdapter:
+    def __init__(self, model, inner_lr=0.01, meta_lr=0.001):
+        self.model = model
+        self.inner_lr = inner_lr
+        self.meta_lr = meta_lr
+        self.adaptation_steps = 5
+
+    def meta_update(self, task_batches):
+        """Perform meta-learning update across multiple tasks"""
+        meta_gradients = [np.zeros_like(param) for param in self.model.get_parameters()]
+
+        for task_data in task_batches:
+            # Create temporary copy of model for task-specific adaptation
+            adapted_params = self.adapt_to_task(task_data, copy.deepcopy(self.model.get_parameters()))
+
+            # Compute gradients on adapted model
+            task_gradients = self.compute_gradients(adapted_params, task_data['validation'])
+
+            # Accumulate meta-gradients
+            for i, grad in enumerate(task_gradients):
+                meta_gradients[i] += grad
+
+        # Average meta-gradients and update
+        num_tasks = len(task_batches)
+        for i in range(len(meta_gradients)):
+            meta_gradients[i] /= num_tasks
+            self.model.parameters[i] -= self.meta_lr * meta_gradients[i]
+
+    def adapt_to_task(self, task_data, initial_params):
+        """Adapt model to a specific task using gradient descent"""
+        adapted_params = initial_params.copy()
+
+        for _ in range(self.adaptation_steps):
+            # Compute gradients on support set
+            gradients = self.compute_gradients(adapted_params, task_data['support'])
+
+            # Update parameters
+            for i, grad in enumerate(gradients):
+                adapted_params[i] -= self.inner_lr * grad
+
+        return adapted_params
+
+    def fast_adapt(self, real_world_samples):
+        """Rapidly adapt to real world using few samples"""
+        adapted_params = self.model.get_parameters().copy()
+
+        # Use real-world data for adaptation
+        for _ in range(10):  # More adaptation steps for real-world
+            gradients = self.compute_gradients(adapted_params, real_world_samples)
+
+            for i, grad in enumerate(gradients):
+                adapted_params[i] -= self.inner_lr * grad
+
+        return adapted_params
+
+    def compute_gradients(self, parameters, data):
+        """Compute gradients for given parameters and data"""
+        # This would use the specific model's gradient computation
+        # Implementation depends on the neural network architecture
+        gradients = []
+
+        for state, action, target in data:
+            # Forward pass
+            prediction = self.model.forward(state, action, parameters)
+            loss = np.mean((prediction - target)**2)
+
+            # Backward pass (simplified)
+            param_gradients = self.model.backward(loss, parameters)
+            gradients.append(param_gradients)
+
+        # Average gradients across samples
+        avg_gradients = []
+        for i in range(len(gradients[0])):
+            avg_grad = np.mean([g[i] for g in gradients], axis=0)
+            avg_gradients.append(avg_grad)
+
+        return avg_gradients
+```
+
+## Fine-Tuning Strategies
+
+### Progressive Fine-Tuning
+
+Gradually adapt policies from simulation to reality:
+
+```python
+# Progressive fine-tuning framework
+class ProgressiveFineTuning:
+    def __init__(self, sim_trained_policy, real_robot_interface):
+        self.sim_policy = sim_trained_policy
+        self.real_interface = real_robot_interface
+        self.fine_tuning_stages = [
+            {
+                'name': 'Safety_Verification',
+                'objective': 'Ensure basic safety constraints',
+                'duration_hours': 1,
+                'data_collection_rate': 0.1,  # 10% of normal operation
+                'safety_constraints': ['joint_limits', 'velocity_limits', 'collision_avoidance'],
+                'success_criteria': {'safety_violations': 0, 'task_completion_rate': 0.6}
+            },
+            {
+                'name': 'Basic_Familiarization',
+                'objective': 'Collect real-world dynamics data',
+                'duration_hours': 4,
+                'data_collection_rate': 0.3,
+                'exploration_noise': 0.1,
+                'success_criteria': {'data_collected': 1000, 'model_convergence': 0.8}
+            },
+            {
+                'name': 'Performance_Optimization',
+                'objective': 'Optimize task performance',
+                'duration_hours': 8,
+                'data_collection_rate': 0.8,
+                'fine_tuning_lr': 0.0001,
+                'success_criteria': {'task_success_rate': 0.9, 'efficiency_improvement': 0.2}
+            },
+            {
+                'name': 'Robustness_Testing',
+                'objective': 'Test under varying conditions',
+                'duration_hours': 12,
+                'data_collection_rate': 1.0,
+                'disturbance_injection': True,
+                'success_criteria': {'robustness_score': 0.85, 'generalization_error': 0.15}
+            }
+        ]
+        self.current_stage = 0
+        self.stage_metrics = []
+
+    def execute_fine_tuning_stage(self, stage_config):
+        """Execute a single fine-tuning stage"""
+        print(f"Executing fine-tuning stage: {stage_config['name']}")
+
+        stage_data = {
+            'stage_name': stage_config['name'],
+            'start_time': time.time(),
+            'metrics': {},
+            'samples_collected': 0
+        }
+
+        # Configure safety constraints
+        if 'safety_constraints' in stage_config:
+            self.setup_safety_constraints(stage_config['safety_constraints'])
+
+        # Configure exploration parameters
+        exploration_noise = stage_config.get('exploration_noise', 0.0)
+        data_collection_rate = stage_config.get('data_collection_rate', 1.0)
+
+        # Execute stage for specified duration
+        duration = stage_config['duration_hours'] * 3600  # Convert to seconds
+        start_time = time.time()
+
+        while time.time() - start_time < duration:
+            # Get current state from real robot
+            current_state = self.real_interface.get_state()
+
+            # Generate action using current policy with exploration
+            if np.random.random() < data_collection_rate:
+                action = self.sim_policy.get_action(current_state)
+
+                # Add exploration noise
+                if exploration_noise > 0:
+                    noise = np.random.normal(0, exploration_noise, size=action.shape)
+                    action = np.clip(action + noise, -1.0, 1.0)
+            else:
+                # Use safe default action
+                action = self.safe_default_action(current_state)
+
+            # Execute action with safety monitoring
+            safety_result = self.real_interface.execute_action_safely(action)
+
+            if safety_result['success']:
+                # Record transition for learning
+                next_state = self.real_interface.get_state()
+                reward = self.calculate_reward(current_state, action, next_state)
+
+                self.store_transition(current_state, action, reward, next_state)
+                stage_data['samples_collected'] += 1
+
+                # Update policy periodically
+                if stage_data['samples_collected'] % 10 == 0:
+                    self.update_policy_from_real_data()
+            else:
+                # Handle safety violation
+                print(f"Safety violation: {safety_result['reason']}")
+                stage_data['metrics'].setdefault('safety_violations', 0)
+                stage_data['metrics']['safety_violations'] += 1
+
+            # Periodic evaluation
+            if stage_data['samples_collected'] % 100 == 0:
+                evaluation_metrics = self.evaluate_current_policy()
+                stage_data['metrics'].update(evaluation_metrics)
+
+                # Check success criteria
+                if self.check_success_criteria(stage_config['success_criteria'], stage_data['metrics']):
+                    print(f"Success criteria met for stage: {stage_config['name']}")
+                    break
+
+        stage_data['end_time'] = time.time()
+        stage_data['duration'] = stage_data['end_time'] - stage_data['start_time']
+
+        return stage_data
+
+    def setup_safety_constraints(self, constraints):
+        """Configure safety constraints for the current stage"""
+        self.safety_config = {}
+
+        for constraint in constraints:
+            if constraint == 'joint_limits':
+                self.safety_config['joint_limits'] = {
+                    'enabled': True,
+                    'margin': 0.1  # 10% margin from limits
+                }
+            elif constraint == 'velocity_limits':
+                self.safety_config['velocity_limits'] = {
+                    'enabled': True,
+                    'margin': 0.2  # 20% margin from limits
+                }
+            elif constraint == 'collision_avoidance':
+                self.safety_config['collision_avoidance'] = {
+                    'enabled': True,
+                    'safety_distance': 0.1  # meters
+                }
+
+    def safe_default_action(self, state):
+        """Generate safe default action when not collecting data"""
+        # Implement safe hold position or slow movement
+        return np.zeros(self.action_dim)  # Hold current position
+
+    def evaluate_current_policy(self):
+        """Evaluate current policy performance"""
+        evaluation_results = {}
+
+        # Test on a set of evaluation scenarios
+        eval_scenarios = self.generate_evaluation_scenarios(10)
+        success_count = 0
+        total_reward = 0
+
+        for scenario in eval_scenarios:
+            scenario_result = self.test_on_scenario(scenario)
+            success_count += scenario_result['success']
+            total_reward += scenario_result['total_reward']
+
+        evaluation_results['task_success_rate'] = success_count / len(eval_scenarios)
+        evaluation_results['average_reward'] = total_reward / len(eval_scenarios)
+
+        return evaluation_results
+
+    def run_progressive_fine_tuning(self):
+        """Execute the complete progressive fine-tuning pipeline"""
+        print("Starting progressive fine-tuning from simulation to reality")
+
+        for stage in self.fine_tuning_stages:
+            stage_result = self.execute_fine_tuning_stage(stage)
+            self.stage_metrics.append(stage_result)
+
+            # Verify stage completion
+            if not self.check_success_criteria(stage['success_criteria'], stage_result['metrics']):
+                print(f"Stage {stage['name']} did not meet success criteria")
+                print("Continuing to next stage with caution...")
+
+            # Brief pause between stages
+            time.sleep(300)  # 5 minutes for cooling and inspection
+
+        print("Progressive fine-tuning completed")
+        return self.stage_metrics
+```
+
+### Real-World Data Collection
+
+Efficiently collect high-quality real-world training data:
+
+```python
+# Real-world data collection with quality control
+class RealWorldDataCollector:
+    def __init__(self, robot_interface, storage_path):
+        self.robot = robot_interface
+        self.storage_path = Path(storage_path)
+        self.quality_thresholds = {
+            'state_variance': 0.001,  # Minimum state change
+            'action_magnitude': 0.01,  # Minimum action magnitude
+            'sensor_confidence': 0.8,  # Minimum sensor reading confidence
+            'time_consistency': 0.1    # Maximum time jitter
+        }
+
+        # Data quality metrics
+        self.collection_stats = {
+            'total_samples': 0,
+            'accepted_samples': 0,
+            'rejected_samples': 0,
+            'rejection_reasons': {}
+        }
+
+    def collect_episode_data(self, episode_length=1000, exploration_strategy='noise'):
+        """Collect data for one episode with quality control"""
+        episode_data = {
+            'states': [],
+            'actions': [],
+            'rewards': [],
+            'next_states': [],
+            'timestamps': [],
+            'quality_scores': [],
+            'metadata': {
+                'collection_time': time.time(),
+                'exploration_strategy': exploration_strategy,
+                'episode_length': episode_length
+            }
+        }
+
+        # Initialize episode
+        current_state = self.robot.get_state()
+        episode_data['states'].append(current_state)
+        episode_data['timestamps'].append(time.time())
+
+        for step in range(episode_length):
+            # Generate action based on exploration strategy
+            if exploration_strategy == 'noise':
+                # Add Gaussian noise to current policy
+                base_action = self.robot.get_policy_action(current_state)
+                noise = np.random.normal(0, 0.1, size=base_action.shape)
+                action = np.clip(base_action + noise, -1.0, 1.0)
+            elif exploration_strategy == 'uniform':
+                # Uniform random exploration
+                action = np.random.uniform(-1.0, 1.0, size=self.robot.action_dim)
+            else:
+                # Use current policy without exploration
+                action = self.robot.get_policy_action(current_state)
+
+            # Execute action
+            success = self.robot.execute_action(action)
+
+            if not success:
+                print(f"Action execution failed at step {step}")
+                break
+
+            # Record transition
+            next_state = self.robot.get_state()
+            reward = self.calculate_immediate_reward(current_state, action, next_state)
+
+            # Quality assessment
+            quality_score = self.assess_data_quality(current_state, action, next_state, reward)
+
+            if quality_score['accept']:
+                episode_data['actions'].append(action)
+                episode_data['rewards'].append(reward)
+                episode_data['next_states'].append(next_state)
+                episode_data['quality_scores'].append(quality_score)
+
+                current_state = next_state
+                self.collection_stats['accepted_samples'] += 1
+            else:
+                self.collection_stats['rejected_samples'] += 1
+                reason = quality_score['rejection_reason']
+                self.collection_stats['rejection_reasons'][reason] = \
+                    self.collection_stats['rejection_reasons'].get(reason, 0) + 1
+
+            episode_data['states'].append(current_state)
+            episode_data['timestamps'].append(time.time())
+            self.collection_stats['total_samples'] += 1
+
+        # Store episode data
+        if len(episode_data['actions']) > 10:  # Minimum useful episode length
+            self.save_episode_data(episode_data)
+            return episode_data
+        else:
+            print("Episode too short - discarding")
+            return None
+
+    def assess_data_quality(self, state, action, next_state, reward):
+        """Assess quality of collected data sample"""
+        quality_result = {
+            'accept': True,
+            'rejection_reason': None,
+            'quality_metrics': {}
+        }
+
+        # Check state variance (ensure meaningful state changes)
+        if len(state) > 0:
+            state_variance = np.var(state)
+            quality_result['quality_metrics']['state_variance'] = state_variance
+
+            if state_variance < self.quality_thresholds['state_variance']:
+                quality_result['accept'] = False
+                quality_result['rejection_reason'] = 'low_state_variance'
+                return quality_result
+
+        # Check action magnitude
+        action_magnitude = np.linalg.norm(action)
+        quality_result['quality_metrics']['action_magnitude'] = action_magnitude
+
+        if action_magnitude < self.quality_thresholds['action_magnitude']:
+            quality_result['accept'] = False
+            quality_result['rejection_reason'] = 'low_action_magnitude'
+            return quality_result
+
+        # Check sensor confidence (if available)
+        sensor_confidence = self.robot.get_sensor_confidence()
+        if sensor_confidence is not None:
+            quality_result['quality_metrics']['sensor_confidence'] = sensor_confidence
+
+            if sensor_confidence < self.quality_thresholds['sensor_confidence']:
+                quality_result['accept'] = False
+                quality_result['rejection_reason'] = 'low_sensor_confidence'
+                return quality_result
+
+        # Additional quality checks
+        quality_result['quality_metrics']['reward_range'] = reward
+        quality_result['quality_metrics']['state_norm'] = np.linalg.norm(state)
+        quality_result['quality_metrics']['action_norm'] = action_magnitude
+
+        return quality_result
+
+    def save_episode_data(self, episode_data):
+        """Save episode data with quality metadata"""
+        timestamp = int(time.time())
+        filename = f"episode_{timestamp}.pkl"
+        filepath = self.storage_path / filename
+
+        with open(filepath, 'wb') as f:
+            pickle.dump(episode_data, f)
+
+        # Also save a summary for quick inspection
+        summary = {
+            'filename': filename,
+            'length': len(episode_data['actions']),
+            'average_reward': np.mean(episode_data['rewards']),
+            'average_quality': np.mean([q['quality_metrics'].get('state_variance', 0)
+                                       for q in episode_data['quality_scores']]),
+            'collection_strategy': episode_data['metadata']['exploration_strategy']
+        }
+
+        summary_filename = f"episode_{timestamp}_summary.json"
+        summary_filepath = self.storage_path / summary_filename
+
+        with open(summary_filepath, 'w') as f:
+            json.dump(summary, f, indent=2)
+```
+
+## Validation and Testing
+
+### Sim-to-Real Validation Framework
+
+Comprehensive validation pipeline for transfer success:
+
+```python
+# Sim-to-real validation framework
+class SimToRealValidator:
+    def __init__(self, sim_policy, real_policy, validation_scenarios):
+        self.sim_policy = sim_policy
+        self.real_policy = real_policy
+        self.validation_scenarios = validation_scenarios
+
+        self.validation_metrics = {
+            'task_success_rate': [],
+            'trajectory_similarity': [],
+            'action_correlation': [],
+            'safety_violations': [],
+            'performance_degradation': [],
+            'robustness_score': []
+        }
+
+    def run_validation_suite(self):
+        """Run comprehensive validation across multiple scenarios"""
+        validation_results = {
+            'scenario_results': [],
+            'overall_metrics': {},
+            'transfer_success_score': 0.0
+        }
+
+        for scenario in self.validation_scenarios:
+            print(f"Validating scenario: {scenario['name']}")
+
+            # Run simulation test
+            sim_result = self.run_simulation_test(scenario)
+
+            # Run real-world test (if available)
+            real_result = self.run_real_world_test(scenario)
+
+            # Compare results
+            comparison = self.compare_policies(sim_result, real_result)
+
+            scenario_result = {
+                'scenario_name': scenario['name'],
+                'sim_metrics': sim_result,
+                'real_metrics': real_result,
+                'comparison': comparison,
+                'transfer_quality': self.calculate_transfer_quality(comparison)
+            }
+
+            validation_results['scenario_results'].append(scenario_result)
+
+        # Calculate overall metrics
+        validation_results['overall_metrics'] = self.calculate_overall_metrics(validation_results['scenario_results'])
+        validation_results['transfer_success_score'] = self.calculate_overall_transfer_score(validation_results['scenario_results'])
+
+        return validation_results
+
+    def run_simulation_test(self, scenario):
+        """Run policy test in simulation environment"""
+        sim_env = self.create_simulation_environment(scenario)
+
+        test_metrics = {
+            'success': False,
+            'episode_length': 0,
+            'total_reward': 0.0,
+            'trajectory': [],
+            'actions': [],
+            'safety_violations': 0,
+            'efficiency_metrics': {}
+        }
+
+        state = sim_env.reset()
+        done = False
+        steps = 0
+        max_steps = scenario.get('max_steps', 1000)
+
+        while not done and steps < max_steps:
+            # Get action from simulation-trained policy
+            action = self.sim_policy.get_action(state)
+
+            # Execute action in simulation
+            next_state, reward, done, info = sim_env.step(action)
+
+            # Record metrics
+            test_metrics['trajectory'].append(state.copy())
+            test_metrics['actions'].append(action.copy())
+            test_metrics['total_reward'] += reward
+
+            # Check for safety violations
+            if 'safety_violation' in info and info['safety_violation']:
+                test_metrics['safety_violations'] += 1
+
+            state = next_state
+            steps += 1
+
+        test_metrics['success'] = done and test_metrics['total_reward'] > scenario.get('success_threshold', 0)
+        test_metrics['episode_length'] = steps
+
+        # Calculate efficiency metrics
+        test_metrics['efficiency_metrics'] = self.calculate_efficiency_metrics(
+            test_metrics['trajectory'], test_metrics['actions'], scenario
+        )
+
+        return test_metrics
+
+    def run_real_world_test(self, scenario):
+        """Run policy test on real robot"""
+        real_env = self.get_real_robot_environment()
+
+        test_metrics = {
+            'success': False,
+            'episode_length': 0,
+            'total_reward': 0.0,
+            'trajectory': [],
+            'actions': [],
+            'safety_violations': 0,
+            'human_interventions': 0,
+            'efficiency_metrics': {}
+        }
+
+        # Setup real-world scenario
+        real_env.setup_scenario(scenario)
+
+        try:
+            state = real_env.reset()
+            done = False
+            steps = 0
+            max_steps = scenario.get('max_steps', 500)  # Conservative limit for real world
+
+            while not done and steps < max_steps:
+                # Get action from real-world adapted policy
+                action = self.real_policy.get_action(state)
+
+                # Execute action with safety monitoring
+                try:
+                    next_state, reward, done, info = real_env.step(action)
+
+                    # Record metrics
+                    test_metrics['trajectory'].append(state.copy())
+                    test_metrics['actions'].append(action.copy())
+                    test_metrics['total_reward'] += reward
+
+                    # Check for safety violations
+                    if 'safety_violation' in info and info['safety_violation']:
+                        test_metrics['safety_violations'] += 1
+
+                    state = next_state
+                    steps += 1
+
+                except Exception as e:
+                    print(f"Real-world execution error: {e}")
+                    test_metrics['human_interventions'] += 1
+                    break
+
+            test_metrics['success'] = done and test_metrics['total_reward'] > scenario.get('success_threshold', 0)
+            test_metrics['episode_length'] = steps
+
+            # Calculate efficiency metrics
+            test_metrics['efficiency_metrics'] = self.calculate_efficiency_metrics(
+                test_metrics['trajectory'], test_metrics['actions'], scenario
+            )
+
+        except Exception as e:
+            print(f"Real-world test failed: {e}")
+            test_metrics['error'] = str(e)
+
+        finally:
+            # Cleanup real-world environment
+            real_env.cleanup()
+
+        return test_metrics
+
+    def compare_policies(self, sim_result, real_result):
+        """Compare simulation and real-world performance"""
+        comparison = {}
+
+        # Success rate comparison
+        comparison['success_rate_gap'] = sim_result['success'] - real_result.get('success', False)
+
+        # Trajectory similarity
+        if sim_result['trajectory'] and real_result.get('trajectory'):
+            # Align trajectories by length for comparison
+            min_length = min(len(sim_result['trajectory']), len(real_result['trajectory']))
+
+            sim_traj = np.array(sim_result['trajectory'][:min_length])
+            real_traj = np.array(real_result['trajectory'][:min_length])
+
+            # Calculate trajectory similarity metrics
+            trajectory_distance = np.mean([np.linalg.norm(sim_traj[i] - real_traj[i])
+                                         for i in range(min_length)])
+
+            comparison['trajectory_similarity'] = 1.0 / (1.0 + trajectory_distance)
+            comparison['trajectory_deviation'] = trajectory_distance
+
+        # Action correlation
+        if sim_result['actions'] and real_result.get('actions'):
+            min_action_length = min(len(sim_result['actions']), len(real_result['actions']))
+
+            sim_actions = np.array(sim_result['actions'][:min_action_length])
+            real_actions = np.array(real_result['actions'][:min_action_length])
+
+            # Calculate action correlation
+            action_correlation = []
+            for i in range(min_action_length):
+                if np.linalg.norm(sim_actions[i]) > 0.01:  # Avoid division by zero
+                    correlation = np.corrcoef(sim_actions[i], real_actions[i])[0, 1]
+                    if not np.isnan(correlation):
+                        action_correlation.append(correlation)
+
+            comparison['action_correlation'] = np.mean(action_correlation) if action_correlation else 0.0
+
+        # Performance metrics comparison
+        comparison['reward_degradation'] = (sim_result['total_reward'] -
+                                          real_result.get('total_reward', 0))
+
+        comparison['efficiency_degradation'] = self.calculate_efficiency_degradation(
+            sim_result['efficiency_metrics'], real_result.get('efficiency_metrics', {})
+        )
+
+        return comparison
+
+    def calculate_transfer_quality(self, comparison):
+        """Calculate overall transfer quality score"""
+        quality_score = 0.0
+        weights = {
+            'success_rate_gap': 0.3,
+            'trajectory_similarity': 0.2,
+            'action_correlation': 0.2,
+            'reward_degradation': 0.15,
+            'efficiency_degradation': 0.15
+        }
+
+        if 'success_rate_gap' in comparison:
+            # Penalize success rate loss
+            success_score = max(0, 1.0 - abs(comparison['success_rate_gap']))
+            quality_score += weights['success_rate_gap'] * success_score
+
+        if 'trajectory_similarity' in comparison:
+            quality_score += weights['trajectory_similarity'] * comparison['trajectory_similarity']
+
+        if 'action_correlation' in comparison:
+            quality_score += weights['action_correlation'] * abs(comparison['action_correlation'])
+
+        if 'reward_degradation' in comparison:
+            # Normalize reward degradation (assuming max possible degradation of 1.0)
+            reward_score = max(0, 1.0 - abs(comparison['reward_degradation']))
+            quality_score += weights['reward_degradation'] * reward_score
+
+        return quality_score
+```
+
+## Best Practices and Common Pitfalls
+
+### Implementation Checklist
+
+**Before Training:**
+- [ ] Validate simulation environment fidelity with real-world measurements
+- [ ] Implement comprehensive safety constraints and emergency stops
+- [ ] Set up data logging and monitoring systems
+- [ ] Configure domain randomization parameters based on real-world variations
+- [ ] Establish baseline performance metrics
+
+**During Transfer:**
+- [ ] Monitor for catastrophic forgetting during fine-tuning
+- [ ] Maintain diversity in real-world data collection
+- [ ] Regularly validate against safety requirements
+- [ ] Track covariate shift between simulation and real data
+- [ ] Implement progressive adaptation strategies
+
+**After Deployment:**
+- [ ] Continuously monitor performance degradation
+- [ ] Collect additional real-world data for continuous improvement
+- [ ] Maintain fallback strategies for unexpected failures
+- [ ] Regular validation against changing environmental conditions
+
+### Common Failure Patterns
+
+**1. Overfitting to Simulation Artifacts**
+```python
+# Bad: Training only on one simulation configuration
+policy.train_on_single_environment()
+
+# Good: Training with diverse domain randomization
+domain_randomizer.randomize_all_parameters()
+policy.train_on_diverse_environments()
+```
+
+**2. Insufficient Real-World Validation**
+```python
+# Bad: Testing only in ideal conditions
+policy.validate_in_lab_conditions()
+
+# Good: Testing across diverse real-world scenarios
+policy.validate_across_conditions([
+    'different_lighting',
+    'various_surfaces',
+    'environmental_disturbances',
+    'sensor_interference'
+])
+```
+
+**3. Neglecting Safety During Transfer**
+```python
+# Bad: Direct policy transfer without safety constraints
+action = sim_policy.get_action(state)
+robot.execute_action(action)
+
+# Good: Safety-monitored execution
+action = adapted_policy.get_action(state)
+if safety_monitor.check_action_safety(action):
+    robot.execute_action(action)
+else:
+    robot.execute_safe_stop()
+```
+
+## Conclusion
+
+Successful sim-to-real transfer requires a systematic approach combining:
+
+1. **Realistic Simulation**: Accurate physics modeling with comprehensive domain randomization
+2. **Progressive Adaptation**: Careful fine-tuning strategies that preserve safety
+3. **Robust Validation**: Comprehensive testing across diverse scenarios
+4. **Continuous Monitoring**: Ongoing performance tracking and adaptation
+
+The techniques presented in this module provide a complete framework for bridging the reality gap and deploying simulation-trained policies on physical humanoid robots with confidence and reliability.

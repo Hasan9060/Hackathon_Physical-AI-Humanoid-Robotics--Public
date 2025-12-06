@@ -1,0 +1,1274 @@
+---
+title: Digital Twin Workstation Specifications
+description: Detailed specifications and configuration for high-performance robotics workstations
+sidebar_label: Workstation Specs
+---
+
+# Digital Twin Workstation Specifications
+
+## Overview
+
+Digital Twin workstations are the computational backbone of modern Physical AI labs, providing the processing power needed for high-fidelity simulation, AI training, and real-time visualization. This section outlines the technical specifications and procurement guidelines for workstation configurations optimized for humanoid robotics development.
+
+## Core Architecture Components
+
+### High-Performance GPU Requirements
+
+The GPU is the most critical component for robotics simulation and AI training:
+
+```python
+# GPU Performance Requirements Analysis
+class GPURequirementsAnalyzer:
+    def __init__(self):
+        self.requirements = {
+            'isaac_sim': {
+                'minimum_vram': '12 GB',
+                'recommended_vram': '24 GB+',
+                'memory_bandwidth': '600 GB/s+',
+                'cuda_cores': '10000+',
+                'tensor_cores': 'Required',
+                'rt_cores': 'Required',
+                'directx_support': '12 Ultimate',
+                'opengl_support': '4.6+'
+            },
+            'unity_ros': {
+                'minimum_vram': '8 GB',
+                'recommended_vram': '16 GB+',
+                'memory_bandwidth': '400 GB/s+',
+                'ray_tracing': 'Recommended',
+                'vr_ready': 'Required for HoloLens integration'
+            },
+            'machine_learning': {
+                'minimum_vram': '16 GB',
+                'recommended_vram': '32 GB+',
+                'tensor_cores': 'Essential',
+                'mixed_precision': 'FP16/TF32 support',
+                'nvlink': 'Multi-GPU scaling'
+            }
+        }
+
+    def analyze_workload(self, use_cases):
+        """Analyze workload requirements to recommend GPU tier"""
+        gpu_tiers = {
+            'entry_level': {
+                'gpu_model': 'RTX 4060 Ti',
+                'vram': '16 GB GDDR6',
+                'bandwidth': '288 GB/s',
+                'cuda_cores': '4352',
+                'tensor_cores': '68',
+                'estimated_cost': '$400-500',
+                'suitable_for': ['basic_simulation', 'light_ml_training']
+            },
+            'mid_range': {
+                'gpu_model': 'RTX 4070 Ti Super',
+                'vram': '16 GB GDDR6X',
+                'bandwidth': '672 GB/s',
+                'cuda_cores': '8448',
+                'tensor_cores': '264',
+                'estimated_cost': '$800-1000',
+                'suitable_for': ['isaac_sim', 'unity_ros', 'medium_ml_training']
+            },
+            'high_end': {
+                'gpu_model': 'RTX 4090',
+                'vram': '24 GB GDDR6X',
+                'bandwidth': '1008 GB/s',
+                'cuda_cores': '16384',
+                'tensor_cores': '512',
+                'estimated_cost': '$1600-2000',
+                'suitable_for': ['heavy_isaac_sim', 'large_scale_ml', 'real_time_rendering']
+            },
+            'professional': {
+                'gpu_model': 'RTX 6000 Ada',
+                'vram': '48 GB GDDR6 with ECC',
+                'bandwidth': '960 GB/s',
+                'cuda_cores': '18176',
+                'tensor_cores': '568',
+                'estimated_cost': '$6000-8000',
+                'suitable_for': ['enterprise_simulation', 'multi_gpu_training', '24/7_workloads']
+            }
+        }
+
+        # Score each GPU tier based on use cases
+        scores = {}
+        for tier, specs in gpu_tiers.items():
+            score = 0
+            for use_case in use_cases:
+                if use_case in specs['suitable_for']:
+                    score += 1
+            scores[tier] = score
+
+        return gpu_tiers, scores
+
+    def calculate_memory_requirements(self, scene_complexity, model_size):
+        """Calculate required VRAM based on workload"""
+        # Base VRAM requirements
+        base_vram = 4  # GB for system
+
+        # Scene complexity factors
+        scene_vram = scene_complexity * 0.5  # 0.5 GB per complexity unit
+
+        # AI model requirements
+        model_vram = model_size * 1.2  # 20% overhead for gradients
+
+        # Multi-tasking overhead
+        multitasking_vram = 4  # GB for multiple applications
+
+        total_vram = base_vram + scene_vram + model_vram + multitasking_vram
+
+        return {
+            'estimated_vram': total_vram,
+            'recommended_gpu': self.recommend_gpu_for_vram(total_vram),
+            'memory_efficiency_tips': self.get_memory_efficiency_tips()
+        }
+
+    def recommend_gpu_for_vram(self, required_vram):
+        """Recommend GPU based on VRAM requirements"""
+        gpu_vram_map = {
+            'RTX 3060': 12,
+            'RTX 4060 Ti': 16,
+            'RTX 4070 Ti': 12,
+            'RTX 4070 Ti Super': 16,
+            'RTX 4080': 16,
+            'RTX 4090': 24,
+            'RTX 6000 Ada': 48,
+            'A6000': 48
+        }
+
+        suitable_gpus = []
+        for gpu, vram in gpu_vram_map.items():
+            if vram >= required_vram:
+                suitable_gpus.append(gpu)
+
+        return suitable_gpus[:3] if suitable_gpus else ['RTX 4090']  # Default to high-end
+
+    def get_memory_efficiency_tips(self):
+        """Get tips for optimizing GPU memory usage"""
+        return [
+            "Use gradient checkpointing for large models",
+            "Implement mixed precision training (FP16/FP32)",
+            "Optimize scene geometry and texture sizes",
+            "Use instance rendering for repeated objects",
+            "Implement level-of-detail (LOD) systems",
+            "Consider texture compression formats (BC7/ASTC)"
+        ]
+```
+
+### CPU and Memory Configuration
+
+Balanced CPU and memory configuration for optimal system performance:
+
+```python
+# System Configuration Optimizer
+class WorkstationConfigOptimizer:
+    def __init__(self):
+        self.cpu_tiers = {
+            'entry': {
+                'model': 'AMD Ryzen 7 7700X / Intel Core i7-13700K',
+                'cores': 8P + 8E (Intel) / 8 cores (AMD),
+                'threads': 24,
+                'base_clock': '3.4 GHz',
+                'boost_clock': '5.3 GHz',
+                'cache': '36 MB L3',
+                'tdp': '125W-170W',
+                'estimated_cost': '$300-400'
+            },
+            'mid_range': {
+                'model': 'AMD Ryzen 9 7900X / Intel Core i9-13900K',
+                'cores': 12P + 16E (Intel) / 12 cores (AMD),
+                'threads': 32,
+                'base_clock': '4.2 GHz',
+                'boost_clock': '5.6 GHz',
+                'cache': '64 MB L3',
+                'tdp': '170W-253W',
+                'estimated_cost': '$500-600'
+            },
+            'high_end': {
+                'model': 'AMD Ryzen 9 7950X / Intel Core i9-14900K',
+                'cores': 16P + 8E (Intel) / 16 cores (AMD),
+                'threads': 32,
+                'base_clock': '4.5 GHz',
+                'boost_clock': '5.7 GHz',
+                'cache': '80 MB L3',
+                'tdp': '170W-253W',
+                'estimated_cost': '$600-800'
+            },
+            'professional': {
+                'model': 'AMD Threadripper PRO 7975WX / Intel Xeon w9-3495X',
+                'cores': 32-64,
+                'threads': 64-128,
+                'base_clock': '3.2-4.2 GHz',
+                'boost_clock': '5.1-4.8 GHz',
+                'cache': '128-256 MB L3',
+                'tdp': '350W-400W',
+                'estimated_cost': '$2000-5000'
+            }
+        }
+
+    def optimize_configuration(self, use_cases, budget, user_count=1):
+        """Optimize workstation configuration based on use cases and budget"""
+        config = {
+            'use_cases': use_cases,
+            'budget': budget,
+            'user_count': user_count
+        }
+
+        # Determine workload intensity
+        intensity = self.assess_workload_intensity(use_cases)
+
+        # Select CPU tier
+        cpu_tier = self.select_cpu_tier(intensity, budget)
+        config['cpu'] = self.cpu_tiers[cpu_tier]
+
+        # Calculate memory requirements
+        memory_config = self.calculate_memory_requirements(use_cases, intensity)
+        config['memory'] = memory_config
+
+        # Select storage configuration
+        storage_config = self.select_storage_configuration(use_cases, budget)
+        config['storage'] = storage_config
+
+        # Power supply requirements
+        psu_config = self.calculate_psu_requirements(config)
+        config['power_supply'] = psu_config
+
+        # Cooling solution
+        cooling_config = self.select_cooling_solution(config)
+        config['cooling'] = cooling_config
+
+        return config
+
+    def assess_workload_intensity(self, use_cases):
+        """Assess workload intensity based on use cases"""
+        intensity_scores = {
+            'isaac_sim': 8,
+            'unity_ros': 6,
+            'machine_learning': 9,
+            'data_processing': 5,
+            'development': 4,
+            'visualization': 7
+        }
+
+        total_score = sum(intensity_scores.get(use_case, 3) for use_case in use_cases)
+        avg_score = total_score / len(use_cases) if use_cases else 3
+
+        if avg_score >= 7:
+            return 'professional'
+        elif avg_score >= 5:
+            return 'high_end'
+        elif avg_score >= 3:
+            return 'mid_range'
+        else:
+            return 'entry'
+
+    def calculate_memory_requirements(self, use_cases, intensity):
+        """Calculate RAM requirements based on use cases"""
+        base_memory = 16  # GB minimum
+
+        use_case_memory = {
+            'isaac_sim': 32,
+            'unity_ros': 16,
+            'machine_learning': 64,
+            'data_processing': 32,
+            'development': 16,
+            'visualization': 24
+        }
+
+        total_memory = base_memory
+        for use_case in use_cases:
+            total_memory += use_case_memory.get(use_case, 16)
+
+        # Add multi-tasking overhead
+        multitasking_overhead = len(use_cases) * 8
+
+        total_memory += multitasking_overhead
+
+        # Round up to standard capacities
+        standard_capacities = [16, 32, 48, 64, 96, 128, 192, 256, 512, 1024]
+        recommended_memory = min(cap for cap in standard_capacities if cap >= total_memory)
+
+        return {
+            'recommended_capacity': f'{recommended_memory} GB',
+            'type': 'DDR5-5600+',
+            'modules': self.recommend_memory_modules(recommended_memory),
+            'estimated_cost': self.estimate_memory_cost(recommended_memory)
+        }
+
+    def recommend_memory_modules(self, capacity_gb):
+        """Recommend specific memory module configuration"""
+        if capacity_gb <= 64:
+            return f'{capacity_gb // 2}x{capacity_gb // (capacity_gb // 2)}GB DDR5-5600'
+        elif capacity_gb <= 128:
+            return f'{capacity_gb // 4}x{capacity_gb // (capacity_gb // 4)}GB DDR5-5600'
+        else:
+            return f'{capacity_gb // 8}x{capacity_gb // (capacity_gb // 8)}GB DDR5-5600 ECC'
+
+    def select_storage_configuration(self, use_cases, budget):
+        """Select optimal storage configuration"""
+        # Base NVMe requirements
+        nvme_requirements = {
+            'isaac_sim': 500,  # GB
+            'unity_ros': 200,
+            'machine_learning': 1000,
+            'data_processing': 2000,
+            'development': 100
+        }
+
+        total_nvme = sum(nvme_requirements.get(use_case, 200) for use_case in use_cases)
+        total_nvme = max(1000, total_nvme)  # Minimum 1TB
+
+        storage_config = {
+            'primary_nvme': {
+                'capacity': f'{min(2000, max(1000, total_nvme))} GB',
+                'interface': 'PCIe 4.0/5.0 NVMe',
+                'speed': '7000+ MB/s read, 6000+ MB/s write',
+                'purpose': 'OS, applications, active projects'
+            },
+            'secondary_nvme': None,
+            'ssd_storage': None,
+            'hdd_storage': None
+        }
+
+        # Add secondary NVMe for data intensive workloads
+        if any(uc in ['machine_learning', 'data_processing'] for uc in use_cases):
+            storage_config['secondary_nvme'] = {
+                'capacity': '2000-4000 GB',
+                'interface': 'PCIe 4.0 NVMe',
+                'speed': '5000+ MB/s',
+                'purpose': 'Datasets, model checkpoints'
+            }
+
+        # Add SSD for additional storage
+        if budget > 2000:
+            storage_config['ssd_storage'] = {
+                'capacity': '2000-4000 GB',
+                'interface': 'SATA SSD',
+                'speed': '550+ MB/s',
+                'purpose': 'Archived projects, backup'
+            }
+
+        return storage_config
+
+    def calculate_psu_requirements(self, config):
+        """Calculate power supply requirements"""
+        # Base power consumption estimates
+        cpu_power = 170 if 'professional' in str(config.get('cpu', {})) else 125
+        gpu_power = 350 if 'RTX 4090' in str(config) else 250
+
+        # Add overhead for other components
+        other_power = 150  # Motherboard, drives, cooling
+
+        total_peak_power = cpu_power + gpu_power + other_power
+
+        # Add 20-30% headroom for efficiency
+        recommended_wattage = int(total_peak_power * 1.3)
+
+        # Round up to standard PSU ratings
+        standard_ratings = [650, 750, 850, 1000, 1200, 1500, 1600]
+        psu_wattage = min(rating for rating in standard_ratings if rating >= recommended_wattage)
+
+        return {
+            'wattage': f'{psu_wattage}W',
+            'efficiency_rating': '80+ Gold or Platinum',
+            'modular': True,
+            'estimated_cost': f'${150 * (psu_wattage // 500)}-${200 * (psu_wattage // 500)}'
+        }
+
+    def select_cooling_solution(self, config):
+        """Select appropriate cooling solution"""
+        cpu_tier = str(config.get('cpu', {}))
+
+        if 'professional' in cpu_tier:
+            return {
+                'type': 'Custom Liquid Cooling',
+                'components': ['CPU water block', '360mm radiator', 'high-flow pump'],
+                'estimated_cost': '$400-600'
+            }
+        elif 'high_end' in cpu_tier:
+            return {
+                'type': 'High-Performance Air Cooling',
+                'components': ['Tower cooler', '140mm fans', 'heat pipes'],
+                'estimated_cost': '$100-150'
+            }
+        else:
+            return {
+                'type': 'Premium Air Cooling',
+                'components': ['Tower cooler', '120mm fans'],
+                'estimated_cost': '$60-100'
+            }
+```
+
+## Edge AI Kit Specifications
+
+### Jetson Orin Configuration
+
+Edge computing capabilities for on-robot processing:
+
+```python
+# Edge AI Kit Configuration
+class EdgeAIKitSpecs:
+    def __init__(self):
+        self.jetson_models = {
+            'orin_nano': {
+                'gpu': '1024-core NVIDIA Ampere architecture GPU',
+                'memory': '8 GB 128-bit LPDDR5',
+                'storage': 'microSD card slot + eMMC 7.1.1',
+                'ai_performance': '40 TOPS (INT8)',
+                'power_consumption': '10-15W',
+                'interfaces': ['PCIe Gen4', 'USB 3.2', 'Gigabit Ethernet', 'MIPI CSI'],
+                'estimated_cost': '$499',
+                'use_cases': ['edge_inference', 'sensor_processing', 'basic_control']
+            },
+            'orin_nx': {
+                'gpu': '2048-core NVIDIA Ampere architecture GPU',
+                'memory': '16 GB 128-bit LPDDR5',
+                'storage': 'eMMC 5.1 + NVMe support',
+                'ai_performance': '100 TOPS (INT8)',
+                'power_consumption': '15-25W',
+                'interfaces': ['PCIe Gen4 x4', 'USB 3.2', '10Gb Ethernet', 'MIPI CSI'],
+                'estimated_cost': '$999',
+                'use_cases': ['advanced_inference', 'multi_sensor_fusion', 'real_time_control']
+            },
+            'agx_orin': {
+                'gpu': '4096-core NVIDIA Ampere architecture GPU',
+                'memory': '64 GB 256-bit LPDDR5',
+                'storage': 'eMMC 5.1 + NVMe support',
+                'ai_performance': '275 TOPS (INT8)',
+                'power_consumption': '30-60W',
+                'interfaces': ['PCIe Gen4 x8', 'USB 3.2', '10Gb Ethernet', 'MIPI CSI'],
+                'estimated_cost': '$1999',
+                'use_cases': ['heavy_inference', 'multi_model_deployment', 'edge_training']
+            }
+        }
+
+    def configure_edge_kit(self, robot_requirements, budget, space_constraints):
+        """Configure edge AI kit based on robot requirements"""
+        config = {
+            'robot_requirements': robot_requirements,
+            'budget': budget,
+            'space_constraints': space_constraints
+        }
+
+        # Select appropriate Jetson model
+        jetson_model = self.select_jetson_model(robot_requirements, budget)
+        config['jetson'] = self.jetson_models[jetson_model]
+
+        # Configure camera interfaces
+        camera_config = self.configure_camera_interfaces(robot_requirements)
+        config['cameras'] = camera_config
+
+        # Configure networking
+        network_config = self.configure_networking(robot_requirements)
+        config['networking'] = network_config
+
+        # Power management
+        power_config = self.configure_power_management(robot_requirements, space_constraints)
+        config['power'] = power_config
+
+        return config
+
+    def select_jetson_model(self, requirements, budget):
+        """Select appropriate Jetson model based on requirements"""
+        ai_performance_required = requirements.get('ai_performance', 0)  # TOPS
+        memory_required = requirements.get('memory', 8)  # GB
+
+        for model, specs in self.jetson_models.items():
+            if (specs['ai_performance'] >= ai_performance_required and
+                int(specs['memory'].split()[0]) >= memory_required):
+
+                # Check budget
+                model_cost = int(specs['estimated_cost'].replace('$', '').split('-')[0])
+                if model_cost <= budget:
+                    return model
+
+        return 'orin_nx'  # Default to mid-range
+
+    def configure_camera_interfaces(self, requirements):
+        """Configure camera interface requirements"""
+        camera_config = {
+            'primary_cameras': {
+                'count': requirements.get('camera_count', 2),
+                'resolution': requirements.get('camera_resolution', '1080p'),
+                'frame_rate': requirements.get('camera_fps', 30),
+                'interface': 'MIPI CSI-2',
+                'bandwidth_requirement': '6 Gbps per camera'
+            },
+            'depth_cameras': {
+                'supported': True,
+                'interface': 'USB 3.2 or MIPI',
+                'recommended_models': ['Intel RealSense D435i', 'StereoLabs ZED2']
+            },
+            'thermal_cameras': {
+                'supported': True,
+                'interface': 'USB or I2C',
+                'use_case': 'safety_monitoring'
+            }
+        }
+
+        return camera_config
+
+    def configure_networking(self, requirements):
+        """Configure networking capabilities"""
+        network_config = {
+            'primary_interface': '10Gb Ethernet',
+            'wireless': {
+                'wifi_6': True,
+                'bluetooth_5': True,
+                'cellular_modem': requirements.get('cellular_required', False)
+            },
+            'protocols': {
+                'ros2_native': True,
+                'dds_optimized': True,
+                'low_latency': '< 1ms'
+            },
+            'bandwidth_requirement': '10 Gbps for high-resolution sensor fusion'
+        }
+
+        return network_config
+
+    def configure_power_management(self, requirements, space_constraints):
+        """Configure power management system"""
+        power_config = {
+            'power_source': requirements.get('power_source', 'battery'),
+            'battery_life': requirements.get('battery_life', '2 hours'),
+            'charging_system': {
+                'fast_charging': True,
+                'hot_swappable': requirements.get('hot_swappable_batteries', False),
+                'charge_time': '1 hour to 80%'
+            },
+            'power_budgeting': {
+                'total_power': '60W maximum',
+                'ai_processing': '30W',
+                'sensors': '15W',
+                'actuators': '10W',
+                'communications': '5W'
+            }
+        }
+
+        return power_config
+```
+
+## Procurement and Cost Analysis
+
+### Complete System Cost Breakdown
+
+```python
+# Cost Analysis and Procurement Planner
+class ProcurementPlanner:
+    def __init__(self):
+        self.component_pricing = {
+            'gpu': {
+                'rtx_4060_ti': 450,
+                'rtx_4070_ti': 800,
+                'rtx_4080': 1200,
+                'rtx_4090': 1600,
+                'rtx_6000_ada': 6500
+            },
+            'cpu': {
+                'ryzen_7_7700x': 350,
+                'ryzen_9_7900x': 550,
+                'ryzen_9_7950x': 700,
+                'i7_13700k': 400,
+                'i9_13900k': 600,
+                'threadripper_pro': 3500
+            },
+            'memory_gb': 25,  # $25 per GB for DDR5
+            'nvme_tb': 120,   # $120 per TB for high-end NVMe
+            'motherboard': {
+                'entry': 200,
+                'mid_range': 350,
+                'high_end': 500,
+                'professional': 800
+            },
+            'power_supply': {
+                '850w': 150,
+                '1000w': 200,
+                '1200w': 250,
+                '1600w': 350
+            },
+            'case': {
+                'mid_tower': 100,
+                'full_tower': 200,
+                'rack_mount': 300
+            },
+            'cooling': {
+                'air_basic': 60,
+                'air_high_end': 120,
+                'liquid_240mm': 250,
+                'liquid_360mm': 400
+            }
+        }
+
+    def generate_procurement_plan(self, lab_requirements, budget_allocation):
+        """Generate comprehensive procurement plan"""
+        plan = {
+            'lab_requirements': lab_requirements,
+            'budget_allocation': budget_allocation,
+            'system_configurations': [],
+            'edge_kits': [],
+            'total_cost': 0,
+            'cost_breakdown': {}
+        }
+
+        # Configure workstations
+        for workstation_type, requirements in lab_requirements.get('workstations', {}).items():
+            config = self.configure_workstation(workstation_type, requirements)
+            plan['system_configurations'].append(config)
+
+        # Configure edge kits
+        for kit_type, requirements in lab_requirements.get('edge_kits', {}).items():
+            config = self.configure_edge_kit(kit_type, requirements)
+            plan['edge_kits'].append(config)
+
+        # Calculate total costs
+        plan['total_cost'] = self.calculate_total_cost(plan)
+        plan['cost_breakdown'] = self.breakdown_costs(plan)
+
+        # Compare with budget
+        plan['budget_analysis'] = self.analyze_budget_allocation(plan, budget_allocation)
+
+        return plan
+
+    def configure_workstation(self, workstation_type, requirements):
+        """Configure individual workstation"""
+        config = {
+            'type': workstation_type,
+            'quantity': requirements.get('quantity', 1),
+            'components': {},
+            'total_cost': 0
+        }
+
+        # Select GPU
+        gpu_tier = requirements.get('gpu_tier', 'mid_range')
+        gpu_options = {
+            'entry': 'rtx_4060_ti',
+            'mid_range': 'rtx_4070_ti',
+            'high_end': 'rtx_4080',
+            'professional': 'rtx_6000_ada'
+        }
+        config['components']['gpu'] = gpu_options[gpu_tier]
+
+        # Select CPU
+        cpu_tier = requirements.get('cpu_tier', 'mid_range')
+        cpu_options = {
+            'entry': 'ryzen_7_7700x',
+            'mid_range': 'ryzen_9_7900x',
+            'high_end': 'ryzen_9_7950x',
+            'professional': 'threadripper_pro'
+        }
+        config['components']['cpu'] = cpu_options[cpu_tier]
+
+        # Configure memory
+        memory_gb = requirements.get('memory_gb', 64)
+        config['components']['memory_gb'] = memory_gb
+
+        # Configure storage
+        nvme_tb = requirements.get('nvme_tb', 2)
+        config['components']['nvme_tb'] = nvme_tb
+
+        # Motherboard
+        config['components']['motherboard_tier'] = cpu_tier
+
+        # Power supply
+        psu_watts = requirements.get('psu_watts', 1000)
+        psu_mapping = {850: '850w', 1000: '1000w', 1200: '1200w', 1600: '1600w'}
+        config['components']['power_supply'] = psu_mapping.get(psu_watts, '1000w')
+
+        # Case and cooling
+        config['components']['case_type'] = requirements.get('case_type', 'mid_tower')
+        config['components']['cooling_type'] = requirements.get('cooling_type', 'air_high_end')
+
+        # Calculate cost
+        config['total_cost'] = self.calculate_workstation_cost(config['components'])
+        config['total_system_cost'] = config['total_cost'] * config['quantity']
+
+        return config
+
+    def calculate_workstation_cost(self, components):
+        """Calculate individual workstation cost"""
+        cost = 0
+
+        # GPU
+        cost += self.component_pricing['gpu'][components['gpu']]
+
+        # CPU
+        cost += self.component_pricing['cpu'][components['cpu']]
+
+        # Memory
+        cost += components['memory_gb'] * self.component_pricing['memory_gb']
+
+        # Storage
+        cost += components['nvme_tb'] * self.component_pricing['nvme_tb']
+
+        # Motherboard
+        cost += self.component_pricing['motherboard'][components['motherboard_tier']]
+
+        # Power supply
+        cost += self.component_pricing['power_supply'][components['power_supply']]
+
+        # Case
+        cost += self.component_pricing['case'][components['case_type']]
+
+        # Cooling
+        cost += self.component_pricing['cooling'][components['cooling_type']]
+
+        # Add 10% for other components (cables, peripherals, etc.)
+        cost *= 1.1
+
+        return cost
+
+    def configure_edge_kit(self, kit_type, requirements):
+        """Configure edge AI kit"""
+        edge_spec = EdgeAIKitSpecs()
+        kit_config = edge_spec.configure_edge_kit(
+            requirements,
+            requirements.get('budget', 1000),
+            requirements.get('space_constraints', {})
+        )
+
+        config = {
+            'type': kit_type,
+            'quantity': requirements.get('quantity', 1),
+            'components': kit_config,
+            'total_cost': kit_config['jetson']['estimated_cost'].replace('$', ''),
+            'total_system_cost': 0
+        }
+
+        # Add additional costs for sensors and mounting
+        additional_costs = {
+            'cameras': requirements.get('camera_count', 2) * 200,
+            'mounting_hardware': 150,
+            'cabling': 100,
+            'power_system': 300
+        }
+
+        for cost_type, cost_value in additional_costs.items():
+            if requirements.get(cost_type.replace('_', '_required'), True):
+                config['total_cost'] = str(int(config['total_cost']) + cost_value)
+
+        config['total_system_cost'] = int(config['total_cost']) * config['quantity']
+
+        return config
+
+    def calculate_total_cost(self, plan):
+        """Calculate total procurement cost"""
+        total_cost = 0
+
+        # Workstation costs
+        for workstation in plan['system_configurations']:
+            total_cost += workstation['total_system_cost']
+
+        # Edge kit costs
+        for edge_kit in plan['edge_kits']:
+            total_cost += edge_kit['total_system_cost']
+
+        # Add 15% for shipping, taxes, and contingency
+        total_cost *= 1.15
+
+        return total_cost
+
+    def breakdown_costs(self, plan):
+        """Break down costs by category"""
+        breakdown = {
+            'workstations': 0,
+            'edge_kits': 0,
+            'networking': 0,
+            'furniture': 0,
+            'software': 0,
+            'contingency': 0
+        }
+
+        # Workstation costs
+        for workstation in plan['system_configurations']:
+            breakdown['workstations'] += workstation['total_system_cost']
+
+        # Edge kit costs
+        for edge_kit in plan['edge_kits']:
+            breakdown['edge_kits'] += edge_kit['total_system_cost']
+
+        # Estimate other costs
+        total_hardware = breakdown['workstations'] + breakdown['edge_kits']
+        breakdown['networking'] = total_hardware * 0.05  # 5% for networking
+        breakdown['furniture'] = len(plan['system_configurations']) * 500  # $500 per workstation
+        breakdown['software'] = total_hardware * 0.10   # 10% for software licenses
+        breakdown['contingency'] = total_hardware * 0.15  # 15% contingency
+
+        return breakdown
+
+    def analyze_budget_allocation(self, plan, budget_allocation):
+        """Analyze budget allocation and recommendations"""
+        total_cost = plan['total_cost']
+        budget = budget_allocation.get('total', 0)
+
+        analysis = {
+            'within_budget': total_cost <= budget,
+            'budget_variance': budget - total_cost,
+            'variance_percentage': ((budget - total_cost) / budget * 100) if budget > 0 else 0,
+            'recommendations': []
+        }
+
+        if not analysis['within_budget']:
+            # Generate cost-saving recommendations
+            analysis['recommendations'].extend([
+                "Consider mid-range GPU options to reduce costs",
+                "Start with baseline memory configurations and upgrade later",
+                "Phase implementation by priority",
+                "Consider refurbished components for non-critical systems"
+            ])
+        else:
+            # Generate optimization recommendations
+            analysis['recommendations'].extend([
+                "Invest surplus in backup systems and redundancy",
+                "Add higher-resolution displays for better development experience",
+                "Consider extended warranties and support contracts",
+                "Allocate budget for training and staff development"
+            ])
+
+        return analysis
+```
+
+## Implementation Timeline
+
+### Phased Deployment Strategy
+
+```python
+# Implementation Timeline and Project Management
+class ImplementationPlanner:
+    def __init__(self):
+        self.phases = {
+            'planning': {
+                'duration_weeks': 4,
+                'activities': [
+                    'Requirements finalization',
+                    'Vendor selection and quotes',
+                    'Site preparation assessment',
+                    'Budget approval process'
+                ],
+                'deliverables': [
+                    'Final system specifications',
+                    'Procurement contracts',
+                    'Site readiness report',
+                    'Project timeline approval'
+                ]
+            },
+            'procurement': {
+                'duration_weeks': 8,
+                'activities': [
+                    'Component ordering and procurement',
+                    'Vendor coordination and logistics',
+                    'Receiving and inspection',
+                    'Inventory management setup'
+                ],
+                'deliverables': [
+                    'All hardware received',
+                    'Quality inspection reports',
+                    'Asset inventory documentation',
+                    'Storage and staging area setup'
+                ]
+            },
+            'infrastructure_setup': {
+                'duration_weeks': 6,
+                'activities': [
+                    'Network infrastructure deployment',
+                    'Power distribution setup',
+                    'Racking and mounting systems',
+                    'Environmental controls installation'
+                ],
+                'deliverables': [
+                    'Network connectivity verified',
+                    'Power systems operational',
+                    'Physical infrastructure complete',
+                    'Environmental monitoring active'
+                ]
+            },
+            'system_integration': {
+                'duration_weeks': 8,
+                'activities': [
+                    'Workstation assembly and configuration',
+                    'Operating system and software installation',
+                    'Network configuration and testing',
+                    'Performance benchmarking'
+                ],
+                'deliverables': [
+                    'All workstations operational',
+                    'Software stack installed and configured',
+                    'Network performance verified',
+                    'Baseline performance metrics established'
+                ]
+            },
+            'deployment_testing': {
+                'duration_weeks': 4,
+                'activities': [
+                    'Integration testing with robotics platforms',
+                    'User acceptance testing',
+                    'Performance optimization',
+                    'Documentation and training'
+                ],
+                'deliverables': [
+                    'End-to-end system validation',
+                    'User training completed',
+                    'Documentation package delivered',
+                    'System ready for production use'
+                ]
+            }
+        }
+
+    def create_implementation_schedule(self, start_date, lab_requirements, concurrent_tasks=False):
+        """Create detailed implementation schedule"""
+        schedule = {
+            'start_date': start_date,
+            'phases': [],
+            'milestones': [],
+            'critical_path': [],
+            'resource_allocation': {}
+        }
+
+        current_date = start_date
+        phase_start_date = start_date
+
+        for phase_name, phase_config in self.phases.items():
+            phase_end_date = self.add_weeks(phase_start_date, phase_config['duration_weeks'])
+
+            phase_info = {
+                'name': phase_name,
+                'start_date': phase_start_date.strftime('%Y-%m-%d'),
+                'end_date': phase_end_date.strftime('%Y-%m-%d'),
+                'duration_weeks': phase_config['duration_weeks'],
+                'activities': phase_config['activities'],
+                'deliverables': phase_config['deliverables'],
+                'status': 'scheduled',
+                'dependencies': self.get_phase_dependencies(phase_name),
+                'budget_allocation': self.estimate_phase_budget(phase_name, lab_requirements)
+            }
+
+            schedule['phases'].append(phase_info)
+
+            # Add key milestones
+            for deliverable in phase_config['deliverables']:
+                schedule['milestones'].append({
+                    'date': phase_end_date.strftime('%Y-%m-%d'),
+                    'milestone': f'{phase_name.title()}: {deliverable}',
+                    'phase': phase_name
+                })
+
+            # Update for next phase
+            if not concurrent_tasks:
+                phase_start_date = self.add_days(phase_end_date, 1)
+
+        # Calculate critical path
+        schedule['critical_path'] = self.calculate_critical_path(schedule['phases'])
+
+        # Estimate resource needs
+        schedule['resource_allocation'] = self.estimate_resource_needs(lab_requirements)
+
+        return schedule
+
+    def get_phase_dependencies(self, phase_name):
+        """Get dependencies for each phase"""
+        dependencies = {
+            'planning': [],
+            'procurement': ['planning'],
+            'infrastructure_setup': ['planning', 'procurement'],
+            'system_integration': ['procurement', 'infrastructure_setup'],
+            'deployment_testing': ['system_integration']
+        }
+        return dependencies.get(phase_name, [])
+
+    def estimate_phase_budget(self, phase_name, lab_requirements):
+        """Estimate budget allocation for each phase"""
+        budget_percentages = {
+            'planning': 0.05,      # 5% for planning and consulting
+            'procurement': 0.75,   # 75% for hardware procurement
+            'infrastructure_setup': 0.10,  # 10% for infrastructure
+            'system_integration': 0.07,     # 7% for integration
+            'deployment_testing': 0.03      # 3% for testing and training
+        }
+
+        total_budget = lab_requirements.get('total_budget', 0)
+        return total_budget * budget_percentages.get(phase_name, 0.1)
+
+    def calculate_critical_path(self, phases):
+        """Calculate project critical path"""
+        # Simplified critical path calculation
+        critical_phases = ['planning', 'procurement', 'infrastructure_setup', 'system_integration', 'deployment_testing']
+
+        total_duration = sum(phase['duration_weeks'] for phase in phases
+                           if phase['name'] in critical_phases)
+
+        return {
+            'total_weeks': total_duration,
+            'critical_phases': critical_phases,
+            'estimated_completion': self.add_weeks(phases[0]['start_date'], total_duration) if phases else None
+        }
+
+    def estimate_resource_needs(self, lab_requirements):
+        """Estimate human resource requirements"""
+        workstation_count = sum(ws.get('quantity', 1) for ws in lab_requirements.get('workstations', {}).values())
+
+        return {
+            'project_manager': 1,
+            'system_administrators': max(1, workstation_count // 10),
+            'network_engineers': 1,
+            'hardware_technicians': max(2, workstation_count // 5),
+            'software_engineers': max(1, workstation_count // 8),
+            'training_specialists': 1,
+            'total_fte': max(3, workstation_count // 3)
+        }
+
+    def add_weeks(self, date, weeks):
+        """Add weeks to a date"""
+        return date + datetime.timedelta(weeks=weeks)
+
+    def add_days(self, date, days):
+        """Add days to a date"""
+        return date + datetime.timedelta(days=days)
+
+    def generate_risk_assessment(self, lab_requirements):
+        """Generate risk assessment for implementation"""
+        risks = [
+            {
+                'risk': 'Supply chain delays for GPU components',
+                'probability': 'Medium',
+                'impact': 'High',
+                'mitigation': 'Order components early, establish backup suppliers',
+                'contingency_plan': 'Use alternative GPU models or phase deployment'
+            },
+            {
+                'risk': 'Budget overruns due to market price fluctuations',
+                'probability': 'Medium',
+                'impact': 'Medium',
+                'mitigation': 'Include 15% contingency budget, lock in prices early',
+                'contingency_plan': 'Prioritize core components, defer optional items'
+            },
+            {
+                'risk': 'Integration issues with existing robotics infrastructure',
+                'probability': 'Low',
+                'impact': 'High',
+                'mitigation': 'Thorough testing in staging environment, vendor support',
+                'contingency_plan': 'Dedicated integration phase, expert consultation'
+            },
+            {
+                'risk': 'Power and cooling infrastructure limitations',
+                'probability': 'Medium',
+                'impact': 'High',
+                'mitigation': 'Professional site assessment, infrastructure upgrade',
+                'contingency_plan': 'Phased deployment, temporary cooling solutions'
+            }
+        ]
+
+        return risks
+```
+
+## Maintenance and Support
+
+### Ongoing Operations Planning
+
+```python
+# Maintenance and Support Planning
+class MaintenancePlanner:
+    def __init__(self):
+        self.maintenance_schedules = {
+            'daily': [
+                'System performance monitoring',
+                'Backup verification',
+                'Security scan checks',
+                'Log analysis and alerting'
+            ],
+            'weekly': [
+                'Software updates and patches',
+                'Hardware temperature monitoring',
+                'Network performance testing',
+                'Storage capacity management'
+            ],
+            'monthly': [
+                'Deep system diagnostics',
+                'Component firmware updates',
+                'Preventive maintenance checks',
+                'Performance benchmarking'
+            ],
+            'quarterly': [
+                'Comprehensive system health assessment',
+                'Disaster recovery testing',
+                'Security audit and penetration testing',
+                'Capacity planning review'
+            ]
+        }
+
+    def create_maintenance_plan(self, system_inventory):
+        """Create comprehensive maintenance plan"""
+        maintenance_plan = {
+            'system_inventory': system_inventory,
+            'maintenance_schedule': self.maintenance_schedules,
+            'spare_parts_strategy': self.develop_spare_parts_strategy(system_inventory),
+            'support_contract_recommendations': self.get_support_contract_recommendations(system_inventory),
+            'training_requirements': self.identify_training_needs(system_inventory),
+            'documentation_requirements': self.define_documentation_requirements()
+        }
+
+        return maintenance_plan
+
+    def develop_spare_parts_strategy(self, system_inventory):
+        """Develop spare parts inventory strategy"""
+        workstation_count = len(system_inventory.get('workstations', []))
+
+        critical_components = {
+            'gpu': {
+                'spare_ratio': 0.1,  # 10% spare ratio for critical components
+                'justification': 'High failure rate, mission critical',
+                'lead_time': '4-8 weeks',
+                'estimated_cost': 'High ($1000-6000 per unit)'
+            },
+            'power_supply': {
+                'spare_ratio': 0.15,
+                'justification': 'Mechanical wear, critical for system uptime',
+                'lead_time': '1-2 weeks',
+                'estimated_cost': 'Medium ($150-350 per unit)'
+            },
+            'memory_modules': {
+                'spare_ratio': 0.05,
+                'justification': 'Low failure rate but impact is significant',
+                'lead_time': '1 week',
+                'estimated_cost': 'Medium ($100-300 per module)'
+            },
+            'storage_drives': {
+                'spare_ratio': 0.1,
+                'justification': 'Wear-based failure, critical for data integrity',
+                'lead_time': '1-2 weeks',
+                'estimated_cost': 'Medium ($100-300 per drive)'
+            }
+        }
+
+        spare_parts_inventory = {}
+        for component, config in critical_components.items():
+            spare_quantity = max(1, int(workstation_count * config['spare_ratio']))
+            spare_parts_inventory[component] = {
+                'quantity': spare_quantity,
+                'justification': config['justification'],
+                'lead_time': config['lead_time'],
+                'estimated_cost': config['estimated_cost']
+            }
+
+        return spare_parts_inventory
+
+    def get_support_contract_recommendations(self, system_inventory):
+        """Get support contract recommendations"""
+        workstation_count = len(system_inventory.get('workstations', []))
+
+        recommendations = {
+            'manufacturer_warranty': {
+                'recommended': True,
+                'duration': '3-5 years extended warranty',
+                'coverage': 'Hardware replacement and technical support',
+                'estimated_cost': '$200-500 per workstation per year'
+            },
+            'on_site_support': {
+                'recommended': workstation_count > 10,
+                'response_time': '4-8 business hours',
+                'coverage': 'On-site component replacement',
+                'estimated_cost': '$1000-2000 per year'
+            },
+            'software_support': {
+                'recommended': True,
+                'providers': ['NVIDIA Enterprise Support', 'Canonical/Ubuntu Pro', 'ROS 2 Commercial Support'],
+                'coverage': 'Software updates, security patches, technical assistance',
+                'estimated_cost': '$500-1500 per workstation per year'
+            },
+            'training_support': {
+                'recommended': True,
+                'duration': 'Initial 3 months, ongoing refreshers',
+                'coverage': 'System administration, troubleshooting, optimization',
+                'estimated_cost': '$2000-5000 per training session'
+            }
+        }
+
+        return recommendations
+
+    def identify_training_needs(self, system_inventory):
+        """Identify training requirements for lab personnel"""
+        training_needs = {
+            'system_administration': {
+                'personnel': ['IT Staff', 'Lab Managers'],
+                'topics': [
+                    'Linux system administration',
+                    'NVIDIA driver management',
+                    'CUDA toolkit configuration',
+                    'Container orchestration (Docker/Singularity)',
+                    'Network configuration and troubleshooting'
+                ],
+                'duration': '40 hours initial + 8 hours refresher quarterly',
+                'certification_recommended': True
+            },
+            'robotics_software': {
+                'personnel': ['Researchers', 'Graduate Students'],
+                'topics': [
+                    'ROS 2 architecture and best practices',
+                    'Gazebo/Isaac Sim configuration',
+                    'GPU programming with CUDA',
+                    'Machine learning framework deployment',
+                    'Real-time system optimization'
+                ],
+                'duration': '24 hours initial + 4 hours refresher semi-annually',
+                'certification_recommended': False
+            },
+            'hardware_maintenance': {
+                'personnel': ['Lab Technicians', 'IT Staff'],
+                'topics': [
+                    'Hardware component replacement',
+                    'Thermal management and cooling systems',
+                    'Power distribution and safety',
+                    'Diagnostic procedures',
+                    'Preventive maintenance protocols'
+                ],
+                'duration': '16 hours initial + 4 hours refresher annually',
+                'certification_recommended': True
+            }
+        }
+
+        return training_needs
+
+    def define_documentation_requirements(self):
+        """Define documentation requirements for ongoing operations"""
+        documentation_requirements = {
+            'system_documentation': [
+                'Hardware inventory and asset management',
+                'Network topology and configuration',
+                'Software installation and configuration procedures',
+                'Performance baseline and benchmarking data',
+                'Emergency procedures and contact information'
+            ],
+            'procedural_documentation': [
+                'Daily operational checklists',
+                'Maintenance procedures and schedules',
+                'Troubleshooting guides for common issues',
+                'Backup and recovery procedures',
+                'Security incident response procedures'
+            ],
+            'training_documentation': [
+                'User manuals for all software platforms',
+                'Best practices guides for common workflows',
+                'Video tutorials for complex procedures',
+                'Knowledge base of common problems and solutions',
+                'Contact information for support resources'
+            ],
+            'compliance_documentation': [
+                'Software license management',
+                'Security audit reports',
+                'Regulatory compliance documentation',
+                'Risk assessment and mitigation plans',
+                'Disaster recovery and business continuity plans'
+            ]
+        }
+
+        return documentation_requirements
+```
+
+## Conclusion
+
+The workstation and edge AI kit specifications outlined above provide a comprehensive foundation for establishing a Physical AI & Humanoid Robotics lab. Key considerations include:
+
+1. **GPU-CPU Balance**: Optimal performance requires careful balance between GPU power for AI/simulation and CPU power for general computation
+2. **Memory Hierarchy**: Adequate VRAM for large models, system RAM for data processing, and fast storage for I/O intensive operations
+3. **Scalability**: Modular configurations that can grow with research needs
+4. **Total Cost of Ownership**: Consider ongoing maintenance, support, and operational costs
+5. **Future-Proofing**: Select components with upgrade paths and long-term support
+
+The procurement and implementation timeline ensures systematic deployment while minimizing risks and maximizing return on investment for educational institutions and research organizations.

@@ -1,0 +1,974 @@
+---
+title: NVIDIA Isaac Sim Setup and Configuration
+description: Setting up NVIDIA Isaac Sim for advanced robotics simulation and AI training
+sidebar_label: Isaac Sim Setup
+---
+
+# NVIDIA Isaac Sim Setup and Configuration
+
+This module provides comprehensive coverage of NVIDIA Isaac Sim installation, configuration, and advanced workflow setup for robotics simulation and AI training. You'll learn to leverage NVIDIA's physics engine, synthetic data generation, and AI model training capabilities.
+
+## Introduction to Isaac Sim
+
+### What is NVIDIA Isaac Sim?
+
+NVIDIA Isaac Sim is a scalable robotics simulation platform that accelerates AI development and deployment. Built on NVIDIA Omniverse™ platform, it provides:
+
+**Advanced Physics Simulation:**
+- NVIDIA PhysX 5 physics engine with real-time performance
+- High-fidelity material and lighting models
+- Advanced sensor simulation (cameras, LiDAR, radar)
+- GPU-accelerated ray tracing and path tracing
+
+**AI and Machine Learning Integration:**
+- Domain randomization for robust model training
+- Synthetic data generation at scale
+- Reinforcement learning environments
+- Computer vision and perception system training
+
+**Professional Development Tools:**
+- Visual scripting with Omnigraph
+- Python and C++ APIs for customization
+- Cloud and on-premises deployment options
+- Collaborative multi-user workflows
+
+### Isaac Sim Architecture
+
+**Core Components:**
+- **Simulation Engine**: PhysX 5 with real-time ray tracing
+- **ROS 2 Bridge**: Seamless integration with ROS 2 ecosystem
+- **Synthetic Data Pipeline**: Automated data generation and labeling
+- **AI Training Integration**: Support for NVIDIA TAO Toolkit and PyTorch
+
+**Deployment Options:**
+- **Desktop Development**: Local workstation development
+- **Cloud Simulation**: Scalable cloud-based simulation
+- **Edge Deployment**: Real-time inference on edge devices
+- **Headless Operation**: Batch processing and automated workflows
+
+## Isaac Sim Installation
+
+### System Requirements
+
+**Hardware Requirements:**
+- **GPU**: NVIDIA RTX 3080 or higher (RTX 4090 recommended)
+- **VRAM**: 12GB minimum, 24GB recommended for complex scenes
+- **RAM**: 32GB minimum, 64GB recommended
+- **Storage**: 100GB SSD minimum, NVMe recommended
+- **OS**: Ubuntu 20.04/22.04 LTS, Windows 10/11
+
+**Software Requirements:**
+- NVIDIA Driver: 515.65 or newer
+- CUDA Toolkit: 12.0 or newer
+- Python: 3.8-3.10
+- ROS 2: Humble or Iron
+- Docker: 20.10 or newer (for containerized deployment)
+
+### Isaac Sim Installation
+
+**Download and Installation:**
+```bash
+# 1. Download NVIDIA Isaac Sim
+# Visit: https://developer.nvidia.com/isaac-sim
+# Download the appropriate version for your system
+
+# 2. Install NVIDIA Driver (Ubuntu)
+sudo apt update
+sudo apt install nvidia-driver-515
+
+# 3. Install CUDA Toolkit
+wget https://developer.download.nvidia.com/compute/cuda/12.0.0/local_installers/cuda_12.0.0_545.23.06_linux.run
+sudo sh cuda_12.0.0_545.23.06_linux.run
+
+# 4. Create Isaac Sim installation directory
+mkdir -p ~/isaac-sim
+cd ~/isaac-sim
+
+# 5. Extract Isaac Sim (example path)
+tar -xvf /path/to/isaac-sim.tar.gz
+
+# 6. Set up environment variables
+echo 'export ISAAC_SIM_PATH=~/isaac-sim' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ISAAC_SIM_PATH/exts/omni.kit.app.services/kit' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Docker Installation (Recommended):**
+```bash
+# 1. Pull Isaac Sim Docker image
+docker pull nvcr.io/nvidia/isaac-sim:2023.1.1
+
+# 2. Create Docker volume for data persistence
+docker volume create isaac-sim-data
+
+# 3. Run Isaac Sim container
+docker run --rm \
+    --gpus all \
+    --network host \
+    -v isaac-sim-data:/root/.nv/omniverse \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -e DISPLAY=$DISPLAY \
+    -v $HOME/.Xauthority:/root/.Xauthority:rw \
+    nvcr.io/nvidia/isaac-sim:2023.1.1
+```
+
+## Isaac Sim Configuration
+
+### Python API Setup
+
+**Python Environment Configuration:**
+```python
+# File: isaac_sim_setup.py
+import os
+import sys
+
+def setup_isaac_sim_environment():
+    """Configure Isaac Sim Python environment"""
+
+    # Add Isaac Sim Python packages to path
+    isaac_sim_path = os.environ.get('ISAAC_SIM_PATH', '/opt/nvidia/isaac-sim')
+    python_path = f"{isaac_sim_path}/python"
+
+    if python_path not in sys.path:
+        sys.path.insert(0, python_path)
+
+    # Set environment variables
+    os.environ['OMNI_KIT_APP_PATH'] = isaac_sim_path
+    os.environ['OMNI_KIT_APP_DATA_PATH'] = f"{isaac_sim_path}/exts"
+
+    print(f"Isaac Sim environment configured: {isaac_sim_path}")
+
+# Example usage
+if __name__ == "__main__":
+    setup_isaac_sim_environment()
+
+    # Import Isaac Sim modules
+    from omni.isaac.kit import SimulationApp
+    from omni.isaac.core import World
+    from omni.isaac.core.utils.nucleus import get_assets_root_path
+
+    print("Isaac Sim modules imported successfully!")
+```
+
+### Basic Isaac Sim Application
+
+**Minimal Simulation Setup:**
+```python
+# File: basic_simulation.py
+import asyncio
+from omni.isaac.kit import SimulationApp
+from omni.isaac.core import World
+from omni.isaac.core.utils.nucleus import get_assets_root_path
+
+class BasicSimulation:
+    def __init__(self):
+        # Initialize simulation app
+        self.simulation_app = SimulationApp({
+            "headless": False,
+            "width": 1280,
+            "height": 720
+        })
+
+        # Create world
+        self.world = World()
+
+        # Simulation parameters
+        self.simulation_running = False
+
+    async def setup_scene(self):
+        """Set up the simulation scene"""
+
+        # Get assets root path
+        assets_root_path = get_assets_root_path()
+
+        # Load ground plane
+        ground_plane_url = f"{assets_root_path}/Isaac/Environments/Terrain/omni_isaac_terrain.usd"
+        await self.world.scene.add_ground_plane(ground_plane_url)
+
+        # Add lighting
+        self._setup_lighting()
+
+        # Configure physics
+        self._configure_physics()
+
+        print("Scene setup completed!")
+
+    def _setup_lighting(self):
+        """Configure scene lighting"""
+        from pxr import Gf
+
+        # Create dome light
+        dome_light = self.world.scene.create_light(
+            "dome_light",
+            light_type="DomeLight"
+        )
+
+        # Configure dome light
+        dome_light.GetPrim().GetAttribute("intensity").Set(500.0)
+        dome_light.GetPrim().GetAttribute("color").Set(Gf.Vec3f(1.0, 1.0, 1.0))
+
+        # Create directional light
+        directional_light = self.world.scene.create_light(
+            "directional_light",
+            light_type="DistantLight"
+        )
+
+        # Configure directional light
+        directional_light.GetPrim().GetAttribute("intensity").Set(3000.0)
+        directional_light.GetPrim().GetAttribute("color").Set(Gf.Vec3f(1.0, 0.955, 0.839))
+
+    def _configure_physics(self):
+        """Configure physics settings"""
+        from omni.isaac.dynamic_control import DynamicControl
+
+        # Get physics scene
+        physics_scene = self.world.get_physics_context()
+
+        # Set physics parameters
+        physics_scene.set_gravity([0.0, 0.0, -9.81])
+        physics_scene.set_solver_iterations(10)
+        physics_scene.set_solver_velocity_iterations(1)
+
+        # Enable GPU dynamics if available
+        try:
+            physics_scene.enable_gpu_dynamics(True)
+            print("GPU dynamics enabled")
+        except Exception as e:
+            print(f"GPU dynamics not available: {e}")
+
+    async def add_robot(self, robot_name="Franka"):
+        """Add a robot to the scene"""
+        from omni.isaac.core.utils.extensions import enable_extension
+        from omni.isaac.franka import Franka
+
+        # Enable Franka extension
+        enable_extension("omni.isaac.franka")
+
+        # Create robot instance
+        robot_prim_path = f"/World/{robot_name}"
+
+        # Add Franka robot
+        franka_robot = Franka(
+            prim_path=robot_prim_path,
+            name="franka_robot",
+            position=[0.0, 0.0, 0.8],
+            orientation=[0.0, 0.0, 0.0]
+        )
+
+        # Add robot to scene
+        self.world.scene.add(franka_robot)
+
+        # Enable joint control
+        from omni.isaac.franka.controllers import PickPlaceController
+        controller = PickPlaceController(
+            name="pick_place_controller",
+            robot_articulation=franka_robot
+        )
+
+        # Add controller to world
+        self.world.add_controller(controller)
+
+        print(f"Robot {robot_name} added to scene!")
+        return franka_robot
+
+    def run_simulation(self):
+        """Run the simulation"""
+        async def simulation_loop():
+            await self.setup_scene()
+            await self.add_robot()
+
+            self.simulation_running = True
+
+            # Simulation loop
+            while self.simulation_running:
+                await self.world.step(render=True)
+                await asyncio.sleep(1.0/60.0)  # 60 FPS
+
+        # Run simulation
+        self.simulation_app.run_async(simulation_loop())
+
+    def stop_simulation(self):
+        """Stop the simulation"""
+        self.simulation_running = False
+        self.simulation_app.close()
+
+# Usage example
+if __name__ == "__main__":
+    simulation = BasicSimulation()
+
+    try:
+        simulation.run_simulation()
+    except KeyboardInterrupt:
+        print("Simulation interrupted by user")
+    finally:
+        simulation.stop_simulation()
+```
+
+## ROS 2 Integration
+
+### ROS 2 Bridge Setup
+
+**ROS 2 Configuration:**
+```python
+# File: ros2_bridge.py
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Image
+from rclpy.qos import QoSProfile, DurabilityPolicy
+
+class IsaacSimROS2Bridge(Node):
+    def __init__(self, simulation_world):
+        super().__init__('isaac_sim_ros2_bridge')
+
+        self.world = simulation_world
+
+        # Configure QoS
+        qos_profile = QoSProfile(
+            depth=10,
+            durability=DurabilityPolicy.VOLATILE
+        )
+
+        # Create publishers
+        self.image_pub = self.create_publisher(
+            Image, '/camera/image_raw', qos_profile
+        )
+
+        # Create subscribers
+        self.cmd_vel_sub = self.create_subscription(
+            Twist, '/cmd_vel', self.cmd_vel_callback, qos_profile
+        )
+
+        # Initialize ROS 2 node
+        print("ROS 2 bridge initialized")
+
+    def cmd_vel_callback(self, msg):
+        """Handle velocity commands from ROS"""
+        # Convert ROS Twist to Isaac Sim motion
+        linear_velocity = [msg.linear.x, msg.linear.y, msg.linear.z]
+        angular_velocity = [msg.angular.x, msg.angular.y, msg.angular.z]
+
+        # Apply to robot (implementation depends on robot type)
+        self.apply_velocity_to_robot(linear_velocity, angular_velocity)
+
+    def apply_velocity_to_robot(self, linear_vel, angular_vel):
+        """Apply velocity to robot in Isaac Sim"""
+        # Get robot articulation
+        robot = self.world.scene.get_object("/World/franka_robot")
+
+        if robot is not None:
+            # Apply joint velocities
+            # This is a simplified example
+            # Actual implementation depends on robot type and configuration
+
+            print(f"Applying linear velocity: {linear_vel}")
+            print(f"Applying angular velocity: {angular_vel}")
+
+    def publish_camera_image(self, camera_name, image_data):
+        """Publish camera image to ROS"""
+        # Create ROS Image message
+        msg = Image()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = camera_name
+        msg.height = image_data.shape[0]
+        msg.width = image_data.shape[1]
+        msg.encoding = "rgb8"
+        msg.is_bigendian = False
+        msg.step = image_data.shape[1] * 3
+
+        # Convert image data to ROS format
+        msg.data = image_data.tobytes()
+
+        # Publish image
+        self.image_pub.publish(msg)
+
+def setup_ros2_bridge(simulation_world):
+    """Initialize ROS 2 bridge with Isaac Sim"""
+
+    # Initialize ROS 2
+    rclpy.init()
+
+    # Create bridge node
+    bridge = IsaacSimROS2Bridge(simulation_world)
+
+    print("ROS 2 bridge established with Isaac Sim")
+
+    return bridge
+```
+
+### Robot Control with ROS 2
+
+**ROS 2 Robot Controller:**
+```python
+# File: ros2_robot_controller.py
+import numpy as np
+from omni.isaac.core import ArticulationView
+from omni.isaac.core.utils.rotations import euler_angles_to_quat
+
+class ROS2RobotController:
+    def __init__(self, robot_prim_path, ros_bridge):
+        self.robot_prim_path = robot_prim_path
+        self.ros_bridge = ros_bridge
+
+        # Create articulation view
+        self.articulation_view = ArticulationView(
+            prim_path=robot_prim_path
+        )
+
+        # Initialize joint positions
+        self.articulation_view.initialize()
+
+        # Joint limits and properties
+        self.joint_limits = {
+            'panda_joint1': (-2.8973, 2.8973),
+            'panda_joint2': (-1.7628, 1.7628),
+            'panda_joint3': (-2.8973, 2.8973),
+            'panda_joint4': (-3.0718, -0.0698),
+            'panda_joint5': (-2.8973, 2.8973),
+            'panda_joint6': (-0.0175, 3.7525),
+            'panda_joint7': (-2.8973, 2.8973)
+        }
+
+        print(f"Robot controller initialized for {robot_prim_path}")
+
+    def set_joint_positions(self, joint_positions):
+        """Set robot joint positions"""
+        # Validate joint positions
+        valid_positions = []
+
+        for i, (joint_name, position) in enumerate(joint_positions.items()):
+            if joint_name in self.joint_limits:
+                min_pos, max_pos = self.joint_limits[joint_name]
+                position = np.clip(position, min_pos, max_pos)
+                valid_positions.append(position)
+            else:
+                valid_positions.append(0.0)  # Default position
+
+        # Apply joint positions
+        self.articulation_view.set_joint_positions(
+            valid_positions, joint_indices=list(range(len(valid_positions)))
+        )
+
+    def get_joint_positions(self):
+        """Get current joint positions"""
+        return self.articulation_view.get_joint_positions()
+
+    def apply_velocity_commands(self, linear_vel, angular_vel):
+        """Apply velocity commands to robot end-effector"""
+        # This is a simplified example
+        # Actual implementation would use inverse kinematics
+
+        current_positions = self.get_joint_positions()
+
+        # Simple differential drive (for mobile robots)
+        # or inverse kinematics (for articulated arms)
+        new_positions = self.compute_inverse_kinematics(
+            linear_vel, angular_vel, current_positions
+        )
+
+        self.set_joint_positions(new_positions)
+
+    def compute_inverse_kinematics(self, linear_vel, angular_vel, current_positions):
+        """Compute inverse kinematics (simplified)"""
+        # This is a placeholder for actual IK computation
+        # Real implementation would use robotic kinematics libraries
+
+        # Simple example: add small perturbation to joint positions
+        new_positions = current_positions.copy()
+
+        for i in range(len(new_positions)):
+            if i % 2 == 0:
+                new_positions[i] += linear_vel[0] * 0.1
+            else:
+                new_positions[i] += angular_vel[2] * 0.1
+
+        return new_positions
+```
+
+## Synthetic Data Generation
+
+### Data Pipeline Setup
+
+**Synthetic Data Generator:**
+```python
+# File: synthetic_data_generator.py
+import numpy as np
+from omni.isaac.sensors import Camera
+from omni.isaac.core.utils.nucleus import get_assets_root_path
+import PIL.Image as Image
+import json
+
+class SyntheticDataGenerator:
+    def __init__(self, simulation_world):
+        self.world = simulation_world
+        self.cameras = []
+        self.output_directory = "./synthetic_data"
+
+        # Create output directory
+        import os
+        os.makedirs(self.output_directory, exist_ok=True)
+
+    async def add_camera(self, camera_name, position, orientation):
+        """Add a camera to the scene"""
+        from pxr import Gf
+
+        camera = Camera(
+            prim_path=f"/World/{camera_name}",
+            position=position,
+            orientation=orientation,
+            frequency=30,
+            resolution=(1920, 1080)
+        )
+
+        # Add camera to world
+        self.world.scene.add(camera)
+        self.cameras.append(camera)
+
+        # Configure camera properties
+        camera.set_focal_length(18.0)
+        camera.set_focus_distance(1.0)
+        camera.set_clipping_range(0.1, 100.0)
+
+        print(f"Camera {camera_name} added to scene")
+
+        return camera
+
+    async def generate_training_data(self, num_frames=100):
+        """Generate synthetic training data"""
+        import os
+        import time
+
+        # Create directories
+        rgb_dir = os.path.join(self.output_directory, "rgb")
+        depth_dir = os.path.join(self.output_directory, "depth")
+        annotations_dir = os.path.join(self.output_directory, "annotations")
+
+        for directory in [rgb_dir, depth_dir, annotations_dir]:
+            os.makedirs(directory, exist_ok=True)
+
+        # Generate data
+        for frame_num in range(num_frames):
+            # Step simulation
+            await self.world.step(render=True)
+
+            # Capture data from all cameras
+            for camera_idx, camera in enumerate(self.cameras):
+                # Get RGB data
+                rgb_data = await self.get_rgb_data(camera)
+
+                # Get depth data
+                depth_data = await self.get_depth_data(camera)
+
+                # Generate annotations
+                annotations = await self.generate_annotations(camera)
+
+                # Save RGB image
+                rgb_filename = os.path.join(
+                    rgb_dir, f"camera_{camera_idx}_frame_{frame_num:06d}.png"
+                )
+                Image.fromarray(rgb_data).save(rgb_filename)
+
+                # Save depth image
+                depth_filename = os.path.join(
+                    depth_dir, f"camera_{camera_idx}_frame_{frame_num:06d}.tiff"
+                )
+                Image.fromarray(depth_data).save(depth_filename)
+
+                # Save annotations
+                annotation_filename = os.path.join(
+                    annotations_dir, f"camera_{camera_idx}_frame_{frame_num:06d}.json"
+                )
+                with open(annotation_filename, 'w') as f:
+                    json.dump(annotations, f, indent=2)
+
+            # Print progress
+            if frame_num % 10 == 0:
+                print(f"Generated frame {frame_num}/{num_frames}")
+
+            # Add small delay for stability
+            await asyncio.sleep(0.033)  # ~30 FPS
+
+        print(f"Generated {num_frames} frames of synthetic training data")
+
+    async def get_rgb_data(self, camera):
+        """Get RGB image data from camera"""
+        rgb_output = camera.get_rgb_data()
+        rgb_image = rgb_output[..., :3]  # Remove alpha channel
+        return rgb_image
+
+    async def get_depth_data(self, camera):
+        """Get depth image data from camera"""
+        depth_output = camera.get_depth_data()
+
+        # Convert depth data to meters and normalize for visualization
+        depth_image = (depth_output - depth_output.min()) / (
+            depth_output.max() - depth_output.min()
+        )
+        depth_image = (depth_image * 65535).astype(np.uint16)
+
+        return depth_image
+
+    async def generate_annotations(self, camera):
+        """Generate training annotations"""
+        annotations = {
+            "frame_id": self.world.current_time_step_index,
+            "timestamp": time.time(),
+            "camera_info": {
+                "position": camera.get_world_pose()[0].tolist(),
+                "orientation": camera.get_world_pose()[1].tolist(),
+                "focal_length": camera.get_focal_length(),
+                "resolution": camera.get_resolution()
+            },
+            "objects": await self.get_object_annotations()
+        }
+
+        return annotations
+
+    async def get_object_annotations(self):
+        """Get annotations for objects in the scene"""
+        annotations = []
+
+        # Get all prim paths in the scene
+        from omni.isaac.core.utils.prims import get_prim_at_path
+
+        # This is a simplified example
+        # In practice, you would iterate through all relevant objects
+        # and extract their poses, bounding boxes, and other properties
+
+        example_objects = [
+            {
+                "name": "franka_robot",
+                "class": "robotic_arm",
+                "position": [0.0, 0.0, 0.8],
+                "orientation": [1.0, 0.0, 0.0, 0.0],
+                "bounding_box": {
+                    "min": [-0.5, -0.5, 0.0],
+                    "max": [0.5, 0.5, 1.6]
+                }
+            }
+        ]
+
+        annotations.extend(example_objects)
+
+        return annotations
+
+    def export_dataset_config(self):
+        """Export dataset configuration file"""
+        config = {
+            "dataset_name": "isaac_sim_synthetic_data",
+            "version": "1.0",
+            "description": "Synthetic training data generated with NVIDIA Isaac Sim",
+            "categories": {
+                "object_detection": {
+                    "images": "rgb/",
+                    "annotations": "annotations/",
+                    "depth_images": "depth/"
+                }
+            },
+            "splits": {
+                "train": 0.8,
+                "val": 0.1,
+                "test": 0.1
+            },
+            "camera_config": {
+                "resolution": [1920, 1080],
+                "focal_length": 18.0,
+                "fps": 30
+            }
+        }
+
+        config_filename = os.path.join(self.output_directory, "config.json")
+        with open(config_filename, 'w') as f:
+            json.dump(config, f, indent=2)
+
+        print(f"Dataset configuration saved to {config_filename}")
+```
+
+### Domain Randomization
+
+**Randomization Parameters:**
+```python
+# File: domain_randomization.py
+import numpy as np
+from omni.isaac.core.utils.nucleus import get_assets_root_path
+
+class DomainRandomizer:
+    def __init__(self, simulation_world):
+        self.world = simulation_world
+        self.randomization_params = {
+            'lighting': {
+                'intensity_range': (0.3, 2.0),
+                'color_range': (0.7, 1.0)
+            },
+            'materials': {
+                'roughness_range': (0.1, 0.9),
+                'metallic_range': (0.0, 0.8)
+            },
+            'object_properties': {
+                'position_range': [(-2, 2), (-2, 2), (0.1, 2.0)],
+                'rotation_range': [(0, 360), (0, 360), (0, 360)],
+                'scale_range': (0.8, 1.2)
+            }
+        }
+
+    async def randomize_lighting(self):
+        """Randomize scene lighting"""
+        from pxr import Gf
+
+        # Randomize dome light
+        dome_light = self.world.scene.get_existing_light("dome_light")
+        if dome_light:
+            intensity = np.random.uniform(*self.randomization_params['lighting']['intensity_range'])
+            color_value = np.random.uniform(*self.randomization_params['lighting']['color_range'])
+
+            dome_light.GetPrim().GetAttribute("intensity").Set(intensity)
+            dome_light.GetPrim().GetAttribute("color").Set(Gf.Vec3f(color_value, color_value, color_value))
+
+        # Randomize directional light
+        directional_light = self.world.scene.get_existing_light("directional_light")
+        if directional_light:
+            intensity = np.random.uniform(*self.randomization_params['lighting']['intensity_range'])
+            directional_light.GetPrim().GetAttribute("intensity").Set(intensity)
+
+            # Randomize sun position
+            azimuth = np.random.uniform(0, 2 * np.pi)
+            elevation = np.random.uniform(np.pi/6, np.pi/2)
+
+            sun_direction = [
+                np.cos(elevation) * np.cos(azimuth),
+                np.cos(elevation) * np.sin(azimuth),
+                np.sin(elevation)
+            ]
+
+            # Apply to light (implementation depends on Isaac Sim version)
+
+    async def randomize_materials(self):
+        """Randomize material properties"""
+        # This is a simplified example
+        # In practice, you would iterate through all materials and randomize their properties
+
+        from omni.isaac.core.materials import PreviewSurface
+
+        # Example: Randomize ground material
+        ground_material = PreviewSurface(
+            prim_path="/World/ground/material",
+            metallic=0.0,
+            roughness=np.random.uniform(*self.randomization_params['materials']['roughness_range'])
+        )
+
+        # Apply material to ground plane
+        self.world.scene.set_material(ground_material, "/World/ground")
+
+        print(f"Randomized materials: roughness={ground_material.roughness:.3f}")
+
+    async def randomize_objects(self):
+        """Randomize object positions, rotations, and scales"""
+        # This is a placeholder for actual object randomization
+        # In practice, you would iterate through scene objects and randomize their transforms
+
+        for i in range(5):  # Randomize 5 example objects
+            position = [
+                np.random.uniform(*self.randomization_params['object_properties']['position_range'][0]),
+                np.random.uniform(*self.randomization_params['object_properties']['position_range'][1]),
+                np.random.uniform(*self.randomization_params['object_properties']['position_range'][2])
+            ]
+
+            rotation = [
+                np.random.uniform(*self.randomization_params['object_properties']['rotation_range'][0]),
+                np.random.uniform(*self.randomization_params['object_properties']['rotation_range'][1]),
+                np.random.uniform(*self.randomization_params['object_properties']['rotation_range'][2])
+            ]
+
+            scale = np.random.uniform(*self.randomization_params['object_properties']['scale_range'])
+
+            # Create random object (this is simplified)
+            await self.create_random_object(f"random_object_{i}", position, rotation, scale)
+
+    async def create_random_object(self, name, position, rotation, scale):
+        """Create a random object in the scene"""
+        from omni.isaac.core.objects import DynamicCuboid
+        from pxr import Gf
+
+        # Create random cuboid
+        cuboid = DynamicCuboid(
+            prim_path=f"/World/{name}",
+            name=name,
+            position=position,
+            orientation=euler_angles_to_quat(rotation, degrees=True),
+            scale=np.array([scale, scale, scale]),
+            color=np.random.rand(3),
+            mass=np.random.uniform(1.0, 10.0)
+        )
+
+        # Add to scene
+        self.world.scene.add(cuboid)
+
+    async def apply_randomization(self):
+        """Apply all domain randomization"""
+        await self.randomize_lighting()
+        await self.randomize_materials()
+        await self.randomize_objects()
+
+        print("Domain randomization applied successfully")
+```
+
+## Performance Optimization
+
+### GPU Acceleration Setup
+
+**GPU Configuration:**
+```python
+# File: gpu_optimization.py
+class GPUOptimizer:
+    def __init__(self, simulation_world):
+        self.world = simulation_world
+
+    def enable_gpu_dynamics(self):
+        """Enable GPU-accelerated physics"""
+        physics_scene = self.world.get_physics_context()
+
+        try:
+            physics_scene.enable_gpu_dynamics(True)
+            print("GPU dynamics enabled successfully")
+        except Exception as e:
+            print(f"Failed to enable GPU dynamics: {e}")
+
+    def optimize_rendering(self):
+        """Optimize rendering settings for performance"""
+        # Enable RTX if available
+        from omni.isaac.core.utils.viewports import set_camera_viewport_render_product_target
+
+        # Set rendering settings
+        from omni.kit.widget.viewport import get_viewport_interface
+
+        viewport_interface = get_viewport_interface()
+        viewport = viewport_interface.get_viewport("Viewport")
+
+        if viewport:
+            # Enable RTX
+            viewport.set_gpu_physics_enabled(True)
+
+            # Optimize quality settings
+            viewport.set_texture_quality(1)  # Balanced quality
+            viewport.set_shading_quality(1)
+
+            print("Rendering optimization applied")
+
+    def configure_memory_usage(self):
+        """Configure memory usage for large simulations"""
+        # Set memory pool sizes
+        self.world.scene.set_memory_pool_sizes({
+            "vertex_buffer_size": 1024 * 1024 * 1024,  # 1GB
+            "index_buffer_size": 512 * 1024 * 1024,    # 512MB
+            "texture_buffer_size": 2 * 1024 * 1024 * 1024  # 2GB
+        })
+
+        print("Memory configuration optimized")
+```
+
+## Best Practices
+
+### Isaac Sim Development Guidelines
+
+**1. Scene Organization:**
+```python
+# Use consistent naming conventions
+prim_path = "/World/Robots/Franka/Robot_01"
+
+# Group related objects
+robot_group = "/World/Robots/Franka"
+sensor_group = "/World/Sensors/Cameras"
+environment_group = "/World/Environment"
+```
+
+**2. Memory Management:**
+```python
+# Clean up unused objects
+def cleanup_unused_objects(self):
+    """Remove unused objects from memory"""
+    from omni.isaac.core.utils.prims import delete_prim
+
+    # Get all prim paths
+    scene_objects = self.world.scene.object_registry.get_all_object_names()
+
+    # Remove objects not in use
+    for obj_name in scene_objects:
+        if not self.is_object_in_use(obj_name):
+            prim_path = f"/World/{obj_name}"
+            delete_prim(prim_path)
+```
+
+**3. Performance Monitoring:**
+```python
+# Monitor simulation performance
+import time
+
+def monitor_performance(self):
+    """Monitor simulation performance metrics"""
+    start_time = time.time()
+
+    # Run simulation step
+    await self.world.step(render=True)
+
+    # Calculate performance metrics
+    step_time = time.time() - start_time
+    fps = 1.0 / step_time if step_time > 0 else 0
+
+    # Log performance
+    if self.frame_count % 60 == 0:
+        print(f"Performance: {step_time*1000:.2f}ms per frame, {fps:.1f} FPS")
+```
+
+## Troubleshooting Common Issues
+
+### Common Problems and Solutions
+
+**1. GPU Memory Issues:**
+```python
+# Reduce memory usage
+physics_scene.set_solver_iterations(5)  # Reduce solver iterations
+viewport.set_texture_quality(0)         # Lower texture quality
+```
+
+**2. ROS 2 Connection Problems:**
+```python
+# Verify ROS 2 bridge setup
+def verify_ros2_bridge(self):
+    """Verify ROS 2 bridge is working"""
+    try:
+        # Test message publication
+        test_msg = String()
+        test_msg.data = "Test message"
+        self.test_publisher.publish(test_msg)
+        print("ROS 2 bridge working correctly")
+    except Exception as e:
+        print(f"ROS 2 bridge issue: {e}")
+```
+
+**3. Simulation Instability:**
+```python
+# Stabilize simulation
+def stabilize_simulation(self):
+    """Improve simulation stability"""
+    physics_scene = self.world.get_physics_context()
+
+    # Adjust physics parameters
+    physics_scene.set_gravity([0.0, 0.0, -9.81])
+    physics_scene.set_solver_iterations(8)
+    physics_scene.set_solver_velocity_iterations(1)
+
+    # Enable CCD for collision detection
+    physics_scene.enable_ccd(True)
+```
+
+## Next Steps
+
+This comprehensive guide to NVIDIA Isaac Sim setup provides the foundation for advanced robotics simulation and AI training. The next sections will cover:
+
+1. **Advanced AI Training**: Deep learning model training with synthetic data
+2. **Reinforcement Learning**: RL environments and algorithms
+3. **Cloud Deployment**: Scalable cloud-based simulation workflows
+4. **Production Integration**: Deploying Isaac Sim in production environments
+
+By mastering these Isaac Sim techniques, you'll be equipped to create state-of-the-art robotics simulation systems for research, development, and deployment.

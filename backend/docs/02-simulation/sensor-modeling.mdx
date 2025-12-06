@@ -1,0 +1,1008 @@
+---
+title: Sensor Simulation and Modeling
+description: Advanced sensor modeling techniques for LiDAR, IMU, Camera, and other robotics sensors in simulation
+sidebar_label: Sensor Modeling
+---
+
+# Sensor Simulation and Modeling
+
+This module provides comprehensive coverage of sensor simulation and modeling techniques for robotics applications. You'll learn to create realistic sensor models, calibrate virtual sensors, and implement advanced sensor fusion algorithms in simulation environments.
+
+## Introduction to Sensor Simulation
+
+### Why Sensor Simulation Matters
+
+Sensor simulation is critical for robotics development because it enables:
+- **Algorithm Development**: Test perception and localization algorithms without hardware
+- **Edge Case Testing**: Create scenarios that are difficult or dangerous to reproduce
+- **Cost Reduction**: Eliminate the need for expensive sensor hardware during development
+- **Rapid Prototyping**: Quickly iterate on sensor configurations and placement
+- **Data Generation**: Generate large labeled datasets for machine learning
+
+### Sensor Categories
+
+**Primary Perception Sensors:**
+- **LiDAR (Light Detection and Ranging)**: 3D point cloud generation
+- **Cameras**: 2D visual perception, color and depth sensing
+- **IMU (Inertial Measurement Unit)**: Acceleration and orientation sensing
+- **GPS**: Global positioning for outdoor navigation
+
+**Secondary/Environmental Sensors:**
+- **Contact Sensors**: Bumpers, touch sensors, force sensors
+- **Temperature Sensors**: Thermal monitoring
+- **Proximity Sensors**: Ultrasonic or infrared distance measurement
+- **Magnetometers**: Compass and magnetic field detection
+
+## LiDAR Simulation
+
+### LiDAR Fundamentals
+
+**LiDAR Operating Principles:**
+- Time-of-Flight measurement using laser pulses
+- 360-degree or limited field-of-view scanning patterns
+- Range accuracy typically 1-5 cm
+- Update rates 5-100 Hz depending on configuration
+
+**Types of LiDAR:**
+- **2D LiDAR**: Single plane scanning for navigation
+- **3D LiDAR**: Multi-layer scanning for full 3D perception
+- **Solid-State LiDAR**: No moving parts, MEMS-based scanning
+- **Flash LiDAR**: Single pulse entire scene capture
+
+### Gazebo LiDAR Implementation
+
+**Basic 2D LiDAR Configuration:**
+```xml
+<!-- 2D LiDAR Sensor -->
+<link name="laser_2d_link">
+  <inertial>
+    <origin xyz="0.0 0.0 0.0"/>
+    <mass value="0.1"/>
+    <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+             iyy="0.001" iyz="0.0"
+             izz="0.001"/>
+  </inertial>
+
+  <visual>
+    <geometry>
+      <cylinder radius="0.03" length="0.05"/>
+    </geometry>
+    <material name="laser_material">
+      <color rgba="0.0 0.0 1.0 1.0"/>
+    </material>
+  </visual>
+
+  <collision>
+    <geometry>
+      <cylinder radius="0.03" length="0.05"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="laser_2d_joint" type="fixed">
+  <parent link="base_link"/>
+  <child link="laser_2d_link"/>
+  <origin xyz="0.0 0.0 0.2" rpy="0.0 0.0 0.0"/>
+</joint>
+
+<gazebo reference="laser_2d_link">
+  <sensor type="ray" name="laser_2d_sensor">
+    <pose>0 0 0 0 0 0</pose>
+
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>720</samples>          <!-- 0.5 degree resolution -->
+          <resolution>1</resolution>
+          <min_angle>-3.14159</min_angle>  <!-- -180 degrees -->
+          <max_angle>3.14159</max_angle>   <!-- +180 degrees -->
+        </horizontal>
+      </scan>
+
+      <range>
+        <min>0.05</min>     <!-- Minimum range 5cm -->
+        <max>30.0</max>     <!-- Maximum range 30m -->
+        <resolution>0.01</resolution>  <!-- 1cm resolution -->
+      </range>
+
+      <noise>
+        <type>gaussian</type>
+        <mean>0.0</mean>
+        <stddev>0.01</stddev>  <!-- 1cm noise -->
+      </noise>
+    </ray>
+
+    <plugin name="laser_2d_controller" filename="libgazebo_ros_ray_sensor.so">
+      <ros>
+        <namespace>/laser_2d</namespace>
+        <remapping>scan:=scan</remapping>
+        <remapping>point_cloud:=point_cloud</remapping>
+      </ros>
+      <output_type>sensor_msgs/LaserScan</output_type>
+      <frame_name>laser_2d_link</frame_name>
+    </plugin>
+
+    <always_on>true</always_on>
+    <update_rate>40</update_rate>  <!-- 40 Hz update rate -->
+    <visualize>true</visualize>
+  </sensor>
+</gazebo>
+```
+
+**3D LiDAR Configuration:**
+```xml
+<!-- 3D Multi-Layer LiDAR -->
+<gazebo reference="laser_3d_link">
+  <sensor type="ray" name="laser_3d_sensor">
+    <pose>0 0 0 0 0 0</pose>
+
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>1800</samples>         <!-- 0.2 degree resolution -->
+          <resolution>1</resolution>
+          <min_angle>-3.14159</min_angle>
+          <max_angle>3.14159</max_angle>
+        </horizontal>
+        <vertical>
+          <samples>16</samples>            <!-- 16 vertical layers -->
+          <resolution>1</resolution>
+          <min_angle>-0.2618</min_angle>    <!-- -15 degrees -->
+          <max_angle>0.2618</max_angle>     <!-- +15 degrees -->
+        </vertical>
+      </scan>
+
+      <range>
+        <min>0.1</min>
+        <max>100.0</max>
+        <resolution>0.02</resolution>
+      </range>
+
+      <noise>
+        <type>gaussian</type>
+        <mean>0.0</mean>
+        <stddev>0.02</stddev>
+      </noise>
+    </ray>
+
+    <plugin name="laser_3d_controller" filename="libgazebo_ros_ray_sensor.so">
+      <ros>
+        <namespace>/laser_3d</namespace>
+        <remapping>scan:=scan</remapping>
+        <remapping>point_cloud:=point_cloud</remapping>
+        <remapping>point_cloud_2:=point_cloud_2</remapping>
+      </ros>
+      <output_type>sensor_msgs/PointCloud2</output_type>
+      <frame_name>laser_3d_link</frame_name>
+    </plugin>
+
+    <always_on>true</always_on>
+    <update_rate>10</update_rate>
+    <visualize>false</visualize>
+  </sensor>
+</gazebo>
+```
+
+### Advanced LiDAR Features
+
+**Multi-Echo LiDAR:**
+```xml
+<gazebo reference="laser_multiecho_link">
+  <sensor type="ray" name="laser_multiecho_sensor">
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>360</samples>
+          <resolution>1</resolution>
+          <min_angle>-3.14159</min_angle>
+          <max_angle>3.14159</max_angle>
+        </horizontal>
+      </scan>
+
+      <range>
+        <min>0.1</min>
+        <max>50.0</max>
+        <resolution>0.01</resolution>
+      </range>
+
+      <!-- Multiple return echoes -->
+      <max_echoes>3</max_echoes>
+      <fade_length>0.05</fade_length>
+    </ray>
+
+    <plugin name="laser_multiecho_controller" filename="libgazebo_ros_ray_sensor.so">
+      <ros>
+        <namespace>/laser_multiecho</namespace>
+      </ros>
+      <output_type>sensor_msgs/MultiEchoLaserScan</output_type>
+    </plugin>
+  </sensor>
+</gazebo>
+```
+
+## Camera Simulation
+
+### Camera Fundamentals
+
+**Camera Operating Principles:**
+- Pinhole camera model for projection
+- RGB color sensing with specific wavelengths
+- Image formation through lens optics
+- Digital sampling and quantization
+
+**Key Camera Parameters:**
+- **Field of View**: Angular extent of visible scene
+- **Resolution**: Pixel dimensions (width x height)
+- **Frame Rate**: Images per second
+- **Dynamic Range**: Light intensity handling capability
+- **Depth Sensing**: Stereo or time-of-flight depth measurement
+
+### Gazebo Camera Implementation
+
+**RGB Camera Configuration:**
+```xml
+<!-- RGB Camera Sensor -->
+<link name="camera_rgb_link">
+  <inertial>
+    <origin xyz="0.0 0.0 0.0"/>
+    <mass value="0.05"/>
+    <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+             iyy="0.001" iyz="0.0"
+             izz="0.001"/>
+  </inertial>
+
+  <visual>
+    <geometry>
+      <box size="0.05 0.05 0.03"/>
+    </geometry>
+    <material name="camera_material">
+      <color rgba="0.0 0.0 0.0 1.0"/>
+    </material>
+  </visual>
+
+  <collision>
+    <geometry>
+      <box size="0.05 0.05 0.03"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="camera_rgb_joint" type="fixed">
+  <parent link="base_link"/>
+  <child link="camera_rgb_link"/>
+  <origin xyz="0.1 0.0 0.3" rpy="0.0 0.0 0.0"/>
+</joint>
+
+<gazebo reference="camera_rgb_link">
+  <sensor type="camera" name="camera_rgb_sensor">
+    <pose>0 0 0 0 0 0</pose>
+
+    <camera>
+      <horizontal_fov>1.047</horizontal_fov>    <!-- 60 degrees -->
+      <image>
+        <width>1920</width>
+        <height>1080</height>
+        <format>R8G8B8</format>
+      </image>
+      <clip>
+        <near>0.1</near>
+        <far>100.0</far>
+      </clip>
+      <lens>
+        <type>thinlens</type>
+        <intrinsics>
+          <fx>960.0</fx>  <!-- Focal length x -->
+          <fy>960.0</fy>  <!-- Focal length y -->
+          <cx>960.0</cx>  <!-- Principal point x -->
+          <cy>540.0</cy>  <!-- Principal point y -->
+          <skew>0.0</skew>
+        </intrinsics>
+        <distortion>
+          <k1>0.0</k1>    <!-- Radial distortion coefficient 1 -->
+          <k2>0.0</k2>    <!-- Radial distortion coefficient 2 -->
+          <k3>0.0</k3>    <!-- Radial distortion coefficient 3 -->
+          <p1>0.0</p1>    <!-- Tangential distortion coefficient 1 -->
+          <p2>0.0</p2>    <!-- Tangential distortion coefficient 2 -->
+        </distortion>
+      </lens>
+    </camera>
+
+    <always_on>true</always_on>
+    <update_rate>30</update_rate>
+    <visualize>true</visualize>
+
+    <plugin name="camera_rgb_controller" filename="libgazebo_ros_camera.so">
+      <ros>
+        <namespace>/camera_rgb</namespace>
+        <remapping>image_raw:=image_raw</remapping>
+        <remapping>camera_info:=camera_info</remapping>
+        <remapping>depth/image_raw:=depth/image_raw</remapping>
+        <remapping>depth/camera_info:=depth/camera_info</remapping>
+      </ros>
+      <camera_name>camera_rgb</camera_name>
+      <frame_name>camera_rgb_link</frame_name>
+      <hack_baseline>0.0</hack_baseline>
+    </plugin>
+  </sensor>
+</gazebo>
+
+<!-- Camera optical frame for correct coordinate transformation -->
+<joint name="camera_rgb_optical_joint" type="fixed">
+  <parent link="camera_rgb_link"/>
+  <child link="camera_rgb_optical_frame"/>
+  <origin xyz="0.0 0.0 0.0" rpy="-1.5708 0.0 -1.5708"/>
+</joint>
+
+<link name="camera_rgb_optical_frame"/>
+```
+
+**Depth Camera Configuration:**
+```xml
+<gazebo reference="camera_depth_link">
+  <sensor type="depth" name="camera_depth_sensor">
+    <pose>0 0 0 0 0 0</pose>
+
+    <camera>
+      <horizontal_fov>1.047</horizontal_fov>
+      <image>
+        <width>640</width>
+        <height>480</height>
+        <format>L8</format>  <!-- Grayscale for depth -->
+      </image>
+      <clip>
+        <near>0.1</near>
+        <far>10.0</far>
+      </clip>
+    </camera>
+
+    <always_on>true</always_on>
+    <update_rate>30</update_rate>
+
+    <plugin name="camera_depth_controller" filename="libgazebo_ros_camera.so">
+      <ros>
+        <namespace>/camera_depth</namespace>
+        <remapping>image_raw:=image_raw</remapping>
+        <remapping>camera_info:=camera_info</remapping>
+        <remapping>depth/image_raw:=depth/image_raw</remapping>
+        <remapping>depth/camera_info:=depth/camera_info</remapping>
+        <remapping>depth/points:=points</remapping>
+      </ros>
+      <camera_name>camera_depth</camera_name>
+      <frame_name>camera_depth_link</frame_name>
+    </plugin>
+  </sensor>
+</gazebo>
+```
+
+**Stereo Camera Setup:**
+```xml
+<!-- Left Camera -->
+<link name="camera_left_link">
+  <!-- Camera definition as above -->
+</link>
+
+<joint name="camera_left_joint" type="fixed">
+  <parent link="base_link"/>
+  <child link="camera_left_link"/>
+  <origin xyz="0.1 -0.05 0.3" rpy="0.0 0.0 0.0"/>
+</joint>
+
+<!-- Right Camera -->
+<link name="camera_right_link">
+  <!-- Camera definition as above -->
+</link>
+
+<joint name="camera_right_joint" type="fixed">
+  <parent link="base_link"/>
+  <child link="camera_right_link"/>
+  <origin xyz="0.1 0.05 0.3" rpy="0.0 0.0 0.0"/>
+</joint>
+
+<!-- Stereo Camera Plugins -->
+<gazebo reference="camera_left_link">
+  <sensor type="camera" name="camera_left_sensor">
+    <camera>
+      <horizontal_fov>1.047</horizontal_fov>
+      <image>
+        <width>640</width>
+        <height>480</height>
+        <format>R8G8B8</format>
+      </image>
+      <clip>
+        <near>0.1</near>
+        <far>100.0</far>
+      </clip>
+    </camera>
+
+    <plugin name="camera_left_controller" filename="libgazebo_ros_camera.so">
+      <ros>
+        <namespace>/camera_stereo/left</namespace>
+        <remapping>image_raw:=image_raw</remapping>
+        <remapping>camera_info:=camera_info</remapping>
+      </ros>
+      <camera_name>camera_left</camera_name>
+      <frame_name>camera_left_link</frame_name>
+      <hack_baseline>0.1</hack_baseline>
+    </plugin>
+
+    <always_on>true</always_on>
+    <update_rate>30</update_rate>
+  </sensor>
+</gazebo>
+
+<gazebo reference="camera_right_link">
+  <sensor type="camera" name="camera_right_sensor">
+    <camera>
+      <horizontal_fov>1.047</horizontal_fov>
+      <image>
+        <width>640</width>
+        <height>480</height>
+        <format>R8G8B8</format>
+      </image>
+      <clip>
+        <near>0.1</near>
+        <far>100.0</far>
+      </clip>
+    </camera>
+
+    <plugin name="camera_right_controller" filename="libgazebo_ros_camera.so">
+      <ros>
+        <namespace>/camera_stereo/right</namespace>
+        <remapping>image_raw:=image_raw</remapping>
+        <remapping>camera_info:=camera_info</remapping>
+      </ros>
+      <camera_name>camera_right</camera_name>
+      <frame_name>camera_right_link</frame_name>
+      <hack_baseline>-0.1</hack_baseline>
+    </plugin>
+
+    <always_on>true</always_on>
+    <update_rate>30</update_rate>
+  </sensor>
+</gazebo>
+```
+
+## IMU Simulation
+
+### IMU Fundamentals
+
+**IMU Components:**
+- **Accelerometer**: Measures linear acceleration (m/s²)
+- **Gyroscope**: Measures angular velocity (rad/s)
+- **Magnetometer**: Measures magnetic field (Gauss)
+- **Barometer**: Measures atmospheric pressure (Pa)
+
+**Coordinate Systems:**
+- **Body Frame**: Sensor-fixed coordinate system
+- **World Frame**: Earth-fixed coordinate system
+- **ENU**: East-North-Up coordinate system
+- **NED**: North-East-Down coordinate system
+
+### Gazebo IMU Implementation
+
+**Basic IMU Configuration:**
+```xml
+<!-- IMU Sensor -->
+<link name="imu_link">
+  <inertial>
+    <origin xyz="0.0 0.0 0.0"/>
+    <mass value="0.025"/>
+    <inertia ixx="0.00001" ixy="0.0" ixz="0.0"
+             iyy="0.00001" iyz="0.0"
+             izz="0.00001"/>
+  </inertial>
+
+  <visual>
+    <geometry>
+      <box size="0.02 0.02 0.01"/>
+    </geometry>
+    <material name="imu_material">
+      <color rgba="0.0 1.0 0.0 1.0"/>
+    </material>
+  </visual>
+
+  <collision>
+    <geometry>
+      <box size="0.02 0.02 0.01"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="imu_joint" type="fixed">
+  <parent link="base_link"/>
+  <child link="imu_link"/>
+  <origin xyz="0.0 0.0 0.05" rpy="0.0 0.0 0.0"/>
+</joint>
+
+<gazebo reference="imu_link">
+  <sensor type="imu" name="imu_sensor">
+    <pose>0 0 0 0 0 0</pose>
+
+    <always_on>true</always_on>
+    <update_rate>200</update_rate>
+    <visualize>true</visualize>
+
+    <imu>
+      <angular_velocity>
+        <x>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>0.0002</stddev>  <!-- 0.2 deg/s noise -->
+            <bias_mean>0.0</bias_mean>
+            <bias_stddev>0.00005</bias_stddev>
+          </noise>
+        </x>
+        <y>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>0.0002</stddev>
+            <bias_mean>0.0</bias_mean>
+            <bias_stddev>0.00005</bias_stddev>
+          </noise>
+        </y>
+        <z>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>0.0002</stddev>
+            <bias_mean>0.0</bias_mean>
+            <bias_stddev>0.00005</bias_stddev>
+          </noise>
+        </z>
+      </angular_velocity>
+
+      <linear_acceleration>
+        <x>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>0.017</stddev>   <!-- 0.017 m/s² noise -->
+            <bias_mean>0.1</bias_mean>
+            <bias_stddev>0.001</bias_stddev>
+          </noise>
+        </x>
+        <y>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>0.017</stddev>
+            <bias_mean>0.1</bias_mean>
+            <bias_stddev>0.001</bias_stddev>
+          </noise>
+        </y>
+        <z>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>0.017</stddev>
+            <bias_mean>0.1</bias_mean>
+            <bias_stddev>0.001</bias_stddev>
+          </noise>
+        </z>
+      </linear_acceleration>
+
+      <orientation_reference>
+        <x>0.0</x>
+        <y>0.0</y>
+        <z>0.0</z>
+        <w>1.0</w>
+      </orientation_reference>
+    </imu>
+
+    <plugin name="imu_controller" filename="libgazebo_ros_imu.so">
+      <ros>
+        <namespace>/imu</namespace>
+        <remapping>~/ imu:=/imu/data</remapping>
+      </ros>
+      <initial_orientation_as_reference>false</initial_orientation_as_reference>
+    </plugin>
+  </sensor>
+</gazebo>
+```
+
+## Advanced Sensor Integration
+
+### Multi-Sensor Fusion Node
+
+**Comprehensive Sensor Fusion:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+import numpy as np
+from sensor_msgs.msg import Imu, LaserScan, CameraInfo
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist, TransformStamped
+from tf2_ros import TransformBroadcaster
+import math
+
+class AdvancedSensorFusion(Node):
+    def __init__(self):
+        super().__init__('advanced_sensor_fusion')
+
+        # TF broadcaster
+        self.tf_broadcaster = TransformBroadcaster(self)
+
+        # Sensor subscribers
+        self.imu_sub = self.create_subscription(
+            Imu, '/imu/data', self.imu_callback, 10
+        )
+
+        self.lidar_sub = self.create_subscription(
+            LaserScan, '/laser/scan', self.lidar_callback, 10
+        )
+
+        self.camera_info_sub = self.create_subscription(
+            CameraInfo, '/camera/camera_info', self.camera_info_callback, 10
+        )
+
+        # Control subscriber
+        self.cmd_vel_sub = self.create_subscription(
+            Twist, '/cmd_vel', self.cmd_vel_callback, 10
+        )
+
+        # Odometry publisher
+        self.odom_pub = self.create_publisher(
+            Odometry, '/odom', 10
+        )
+
+        # State variables
+        self.x = 0.0
+        self.y = 0.0
+        self.theta = 0.0
+        self.vx = 0.0
+        self.vy = 0.0
+        self.vtheta = 0.0
+
+        # Sensor calibration
+        self.imu_bias = np.array([0.0, 0.0, 0.0])
+        self.lidar_offset = np.array([0.0, 0.0])
+        self.camera_intrinsics = None
+
+        # Time tracking
+        self.last_time = self.get_clock().now()
+
+        self.get_logger().info('Advanced sensor fusion node initialized')
+
+    def imu_callback(self, msg):
+        """Process IMU data for orientation and angular velocity"""
+        # Extract angular velocity (rad/s)
+        wx = msg.angular_velocity.x
+        wy = msg.angular_velocity.y
+        wz = msg.angular_velocity.z
+
+        # Extract linear acceleration (m/s²)
+        ax = msg.linear_acceleration.x
+        ay = msg.linear_acceleration.y
+        az = msg.linear_acceleration.z
+
+        # Convert quaternion to Euler angles
+        qx, qy, qz, qw = msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w
+
+        # Yaw calculation from quaternion
+        self.theta = math.atan2(2*(qw*qz + qx*qy), 1 - 2*(qy*qy + qz*qz))
+
+        # Update angular velocity
+        self.vtheta = wz
+
+    def lidar_callback(self, msg):
+        """Process LiDAR data for position estimation"""
+        # Convert polar coordinates to Cartesian
+        ranges = np.array(msg.ranges)
+        angles = np.linspace(msg.angle_min, msg.angle_max, len(ranges))
+
+        # Filter valid ranges
+        valid_indices = (ranges > msg.range_min) & (ranges < msg.range_max)
+        valid_ranges = ranges[valid_indices]
+        valid_angles = angles[valid_indices]
+
+        if len(valid_ranges) > 10:
+            # Simple position estimation using scan matching
+            x_scans = valid_ranges * np.cos(valid_angles)
+            y_scans = valid_ranges * np.sin(valid_angles)
+
+            # Estimate position using centroid method
+            self.x = np.mean(x_scans)
+            self.y = np.mean(y_scans)
+
+    def camera_info_callback(self, msg):
+        """Store camera intrinsics for calibration"""
+        self.camera_intrinsics = {
+            'fx': msg.k[0],
+            'fy': msg.k[4],
+            'cx': msg.k[2],
+            'cy': msg.k[5]
+        }
+
+    def cmd_vel_callback(self, msg):
+        """Process velocity commands"""
+        current_time = self.get_clock().now()
+        dt = (current_time - self.last_time).nanoseconds * 1e-9
+
+        # Update velocities
+        self.vx = msg.linear.x
+        self.vy = msg.linear.y
+        self.vtheta = msg.angular.z
+
+        # Predict position using motion model
+        self.x += self.vx * dt * math.cos(self.theta) - self.vy * dt * math.sin(self.theta)
+        self.y += self.vx * dt * math.sin(self.theta) + self.vy * dt * math.cos(self.theta)
+        self.theta += self.vtheta * dt
+
+        # Normalize angle
+        self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
+
+        # Publish odometry
+        self.publish_odometry(current_time)
+
+        # Publish TF transform
+        self.publish_tf(current_time)
+
+        self.last_time = current_time
+
+    def publish_odometry(self, current_time):
+        """Publish odometry message"""
+        odom = Odometry()
+        odom.header.stamp = current_time.to_msg()
+        odom.header.frame_id = 'odom'
+        odom.child_frame_id = 'base_link'
+
+        # Position
+        odom.pose.pose.position.x = self.x
+        odom.pose.pose.position.y = self.y
+        odom.pose.pose.position.z = 0.0
+
+        # Orientation (quaternion)
+        odom.pose.pose.orientation.x = 0.0
+        odom.pose.pose.orientation.y = 0.0
+        odom.pose.pose.orientation.z = np.sin(self.theta / 2)
+        odom.pose.pose.orientation.w = np.cos(self.theta / 2)
+
+        # Velocity
+        odom.twist.twist.linear.x = self.vx
+        odom.twist.twist.linear.y = self.vy
+        odom.twist.twist.angular.z = self.vtheta
+
+        # Covariance (simplified)
+        odom.pose.covariance = [0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.1, 0.0, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
+                              0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+
+        odom.twist.covariance = [0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
+                               0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+                               0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
+                               0.0, 0.0, 0.0, 0.1, 0.0, 0.0,
+                               0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
+                               0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+
+        self.odom_pub.publish(odom)
+
+    def publish_tf(self, current_time):
+        """Publish TF transform"""
+        transform = TransformStamped()
+        transform.header.stamp = current_time.to_msg()
+        transform.header.frame_id = 'odom'
+        transform.child_frame_id = 'base_link'
+
+        transform.transform.translation.x = self.x
+        transform.transform.translation.y = self.y
+        transform.transform.translation.z = 0.0
+
+        transform.transform.rotation.x = 0.0
+        transform.transform.rotation.y = 0.0
+        transform.transform.rotation.z = np.sin(self.theta / 2)
+        transform.transform.rotation.w = np.cos(self.theta / 2)
+
+        self.tf_broadcaster.sendTransform(transform)
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        node = AdvancedSensorFusion()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Testing and Validation
+
+### Sensor Performance Analysis
+
+**LiDAR Performance Testing:**
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+import numpy as np
+from sensor_msgs.msg import LaserScan
+import matplotlib.pyplot as plt
+from collections import deque
+
+class LiDARPerformanceAnalyzer(Node):
+    def __init__(self):
+        super().__init__('lidar_performance_analyzer')
+
+        self.lidar_sub = self.create_subscription(
+            LaserScan, '/laser/scan', self.lidar_callback, 10
+        )
+
+        # Performance metrics
+        self.scan_times = deque(maxlen=1000)
+        self.scan_rates = deque(maxlen=1000)
+        self.range_statistics = deque(maxlen=1000)
+        self.last_scan_time = None
+
+        # Analysis parameters
+        self.scan_count = 0
+        self.expected_rate = 40.0  # Hz
+
+        self.get_logger().info('LiDAR performance analyzer started')
+
+    def lidar_callback(self, msg):
+        """Analyze LiDAR scan performance"""
+        current_time = self.get_clock().now()
+        current_time_sec = current_time.sec + current_time.nanosec * 1e-9
+
+        if self.last_scan_time is not None:
+            # Calculate scan rate
+            time_diff = current_time_sec - self.last_scan_time
+            scan_rate = 1.0 / time_diff if time_diff > 0 else 0
+            self.scan_rates.append(scan_rate)
+
+        self.last_scan_time = current_time_sec
+        self.scan_count += 1
+
+        # Analyze range data
+        ranges = np.array(msg.ranges)
+        valid_ranges = ranges[(ranges > msg.range_min) & (ranges < msg.range_max)]
+
+        if len(valid_ranges) > 0:
+            range_stats = {
+                'mean': np.mean(valid_ranges),
+                'std': np.std(valid_ranges),
+                'min': np.min(valid_ranges),
+                'max': np.max(valid_ranges),
+                'valid_count': len(valid_ranges),
+                'total_count': len(ranges)
+            }
+            self.range_statistics.append(range_stats)
+
+        # Report performance every 100 scans
+        if self.scan_count % 100 == 0:
+            self.report_performance()
+
+    def report_performance(self):
+        """Report current performance metrics"""
+        if len(self.scan_rates) > 0:
+            avg_rate = np.mean(self.scan_rates)
+            std_rate = np.std(self.scan_rates)
+            min_rate = np.min(self.scan_rates)
+            max_rate = np.max(self.scan_rates)
+
+            self.get_logger().info(f'LiDAR Performance Analysis (Scans: {self.scan_count}):')
+            self.get_logger().info(f'  Rate: Avg={avg_rate:.2f}Hz, Std={std_rate:.2f}Hz')
+            self.get_logger().info(f'  Rate Range: Min={min_rate:.2f}Hz, Max={max_rate:.2f}Hz')
+            self.get_logger().info(f'  Expected Rate: {self.expected_rate:.2f}Hz')
+            self.get_logger().info(f'  Rate Accuracy: {(avg_rate/self.expected_rate)*100:.1f}%')
+
+        if len(self.range_statistics) > 0:
+            recent_ranges = list(self.range_statistics)[-10:]
+            avg_mean = np.mean([r['mean'] for r in recent_ranges])
+            avg_std = np.mean([r['std'] for r in recent_ranges])
+            avg_valid_count = np.mean([r['valid_count'] for r in recent_ranges])
+            avg_total_count = np.mean([r['total_count'] for r in recent_ranges])
+
+            self.get_logger().info(f'Range Statistics (Last 10 scans):')
+            self.get_logger().info(f'  Mean Range: {avg_mean:.3f}m ± {avg_std:.3f}m')
+            self.get_logger().info(f'  Valid Points: {avg_valid_count:.1f}/{avg_total_count:.1f}')
+            self.get_logger().info(f'  Data Quality: {(avg_valid_count/avg_total_count)*100:.1f}%')
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    try:
+        analyzer = LiDARPerformanceAnalyzer()
+        rclpy.spin(analyzer)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        analyzer.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+## Best Practices
+
+### Sensor Configuration Guidelines
+
+**1. Realistic Sensor Parameters:**
+```xml
+<!-- Use realistic noise parameters based on sensor specifications -->
+<sensor type="imu" name="realistic_imu">
+  <imu>
+    <angular_velocity>
+      <x>
+        <noise type="gaussian">
+          <stddev>0.000174</stddev>  <!-- 0.01 deg/s at 100 Hz -->
+        </noise>
+      </x>
+    </angular_velocity>
+  </imu>
+</sensor>
+```
+
+**2. Proper Sensor Placement:**
+```xml
+<!-- Ensure sensors have clear field of view -->
+<joint name="camera_joint" type="fixed">
+  <parent link="base_link"/>
+  <child link="camera_link"/>
+  <origin xyz="0.2 0.0 0.3" rpy="0.0 0.1 0.0"/>  <!-- Slight tilt for ground view -->
+</joint>
+```
+
+**3. Sensor Synchronization:**
+```python
+# Synchronize multiple sensors using timestamps
+def synchronize_sensors(camera_msg, lidar_msg, imu_msg):
+    """Synchronize sensor data by timestamp"""
+    camera_time = camera_msg.header.stamp.sec + camera_msg.header.stamp.nanosec * 1e-9
+    lidar_time = lidar_msg.header.stamp.sec + lidar_msg.header.stamp.nanosec * 1e-9
+    imu_time = imu_msg.header.stamp.sec + imu_msg.header.stamp.nanosec * 1e-9
+
+    # Use closest sensor reading within time tolerance
+    tolerance = 0.01  # 10ms tolerance
+
+    # Implement synchronization logic
+    return synchronized_data
+```
+
+### Common Pitfalls and Solutions
+
+**1. Incorrect Sensor Frames:**
+```xml
+<!-- Problem: Missing optical frame for cameras -->
+<link name="camera_link"/>
+
+<!-- Solution: Add optical frame for correct coordinate transformation -->
+<joint name="camera_optical_joint" type="fixed">
+  <parent link="camera_link"/>
+  <child link="camera_optical_frame"/>
+  <origin xyz="0.0 0.0 0.0" rpy="-1.5708 0.0 -1.5708"/>
+</joint>
+<link name="camera_optical_frame"/>
+```
+
+**2. Unrealistic Performance:**
+```xml
+<!-- Problem: Too high update rate for realistic sensor -->
+<sensor type="camera" name="unrealistic_camera">
+  <update_rate>1000</update_rate>  <!-- 1000 Hz camera is unrealistic -->
+</sensor>
+
+<!-- Solution: Use realistic update rates -->
+<sensor type="camera" name="realistic_camera">
+  <update_rate>30</update_rate>  <!-- 30 Hz is realistic for most cameras -->
+</sensor>
+```
+
+## Next Steps
+
+This comprehensive guide to sensor simulation provides the foundation for creating realistic sensor models in robotics simulation environments. The next sections will cover:
+
+1. **Unity Integration**: High-fidelity visualization and advanced rendering
+2. **Multi-Robot Scenarios**: Complex multi-sensor, multi-agent simulations
+3. **Real-World Validation**: Bridging simulation and physical sensor testing
+4. **AI Integration**: Machine learning with simulated sensor data
+
+By mastering these sensor simulation techniques, you'll be equipped to create sophisticated, realistic robotics simulations for algorithm development, testing, and validation.

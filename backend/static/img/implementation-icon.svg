@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Terminal/IDE window -->
+  <rect x="30" y="40" width="340" height="320" rx="8" fill="#1a202c" stroke="#2d3748" stroke-width="2"/>
+
+  <!-- Title bar -->
+  <rect x="30" y="40" width="340" height="35" rx="8" fill="#2d3748"/>
+  <circle cx="50" cy="57" r="5" fill="#fc8181"/>
+  <circle cx="65" cy="57" r="5" fill="#f6e05e"/>
+  <circle cx="80" cy="57" r="5" fill="#68d391"/>
+
+  <!-- Code content -->
+  <text x="50" y="105" font-family="monospace" font-size="14" fill="#10b981">
+    const spec = {
+  </text>
+  <text x="70" y="125" font-family="monospace" font-size="14" fill="#a0aec0">
+    name: "Robotics Lab",
+  </text>
+  <text x="70" y="145" font-family="monospace" font-size="14" fill="#a0aec0">
+    modules: 13,
+  </text>
+  <text x="70" y="165" font-family="monospace" font-size="14" fill="#a0aec0">
+    hardware: {...}
+  </text>
+  <text x="50" y="185" font-family="monospace" font-size="14" fill="#10b981">
+    };
+  </text>
+
+  <!-- Execution arrow -->
+  <path d="M 100 210 L 100 240" stroke="#667eea" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#667eea"/>
+    </marker>
+  </defs>
+
+  <!-- Result/output -->
+  <rect x="50" y="260" width="300" height="80" rx="5" fill="url(#grad1)" opacity="0.2"/>
+  <rect x="50" y="260" width="300" height="80" rx="5" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5"/>
+
+  <!-- Success indicators -->
+  <circle cx="80" cy="300" r="15" fill="#10b981"/>
+  <path d="M72 300 L77 305 L88 290" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="110" y="295" font-family="Arial, sans-serif" font-size="14" fill="#047857" font-weight="bold">
+    Implementation Complete
+  </text>
+  <text x="110" y="315" font-family="Arial, sans-serif" font-size="12" fill="#065f46">
+    ✓ All tests passing
+  </text>
+</svg>
