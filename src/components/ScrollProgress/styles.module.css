@@ -1,0 +1,156 @@
+/* Blue progress bar at the top */
+.progressBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.2s ease-out;
+  z-index: 1001;
+  opacity: 0;
+  transform: translateY(-4px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+}
+
+.progressBar.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Light theme */
+.progressBar.light {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+}
+
+/* Dark theme */
+.progressBar.dark {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.6);
+}
+
+/* Desktop enhancements */
+@media (min-width: 1024px) {
+  .progressBar {
+    height: 4px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  }
+
+  .progressBar.dark {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 50%, #1c3a5a 100%);
+  }
+
+  .progressBar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4));
+    animation: progressShimmer 2s infinite;
+  }
+}
+
+@keyframes progressShimmer {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+
+/* Additional visual effects */
+.progressBar {
+  position: relative;
+  overflow: hidden;
+}
+
+.progressBar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: progressWave 2s infinite;
+}
+
+@keyframes progressWave {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Smooth transitions for theme changes */
+.progressBar {
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Documentation page specific styles */
+:global(.theme-doc-markdown) ~ .progressBar {
+  z-index: 1002; /* Ensure it's above the doc content */
+}
+
+/* Enhance visibility during scroll */
+.progressBar.visible {
+  animation: fadeInDown 0.3s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Additional visual enhancements */
+.progressBar {
+  position: relative;
+  overflow: hidden;
+}
+
+.progressBar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: progressWave 2s infinite;
+}
+
+@keyframes progressWave {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}

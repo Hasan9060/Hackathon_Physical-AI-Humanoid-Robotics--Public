@@ -1,0 +1,156 @@
+/* Scroll indicator container */
+.scrollIndicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  z-index: 999;
+  pointer-events: none;
+}
+
+/* Track background */
+.track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0 2px 2px 0;
+  transition: background-color 0.3s ease;
+}
+
+.track.light {
+  background: rgba(219, 234, 254, 0.2);
+}
+
+.track.dark {
+  background: rgba(30, 41, 59, 0.3);
+}
+
+/* Progress fill */
+.progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.2s ease-out;
+  position: relative;
+  height: 100%;
+}
+
+.progress.light {
+  background: linear-gradient(90deg, #156619 0%, #1aa87e 50%, #148b63 100%);
+}
+
+.progress.dark {
+  background: linear-gradient(90deg, #23b62a 0%, #1eaf3d 50%, #1c5a34 100%);
+}
+
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateX(-20px) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-20px) scale(1.1);
+  }
+}
+
+/* Add subtle animation to progress */
+
+
+@keyframes shimmerRight {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .scrollIndicator {
+    height: 3px;
+  }
+
+  .track,
+  .progress {
+    border-radius: 0 1.5px 1.5px 0;
+  }
+
+  .glow {
+    top: -5px;
+    width: 30px;
+    height: 13px;
+    border-radius: 6px;
+    transform: translateX(-15px);
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1024px) {
+  .scrollIndicator {
+    height: 5px;
+  }
+
+  .track,
+  .progress {
+    border-radius: 0 2.5px 2.5px 0;
+  }
+
+  .glow {
+    top: -8px;
+    width: 50px;
+    height: 21px;
+    border-radius: 10px;
+    transform: translateX(-25px);
+  }
+}
+
+/* Hide on very small screens */
+@media (max-width: 480px) {
+  .scrollIndicator {
+    height: 2px;
+  }
+
+  .glow {
+    display: none;
+  }
+}
+
+/* Dark mode enhancements */
+.progress.dark::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  border-radius: inherit;
+}
+
+/* Smooth transitions for theme changes */
+.track,
+.progress,
+.glow {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Add subtle shadow to progress bar */
+.progress.light {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.progress.dark {
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+}

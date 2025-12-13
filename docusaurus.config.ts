@@ -16,24 +16,30 @@ const config: Config = {
   organizationName: 'hasanrafay',
   projectName: 'humanoid-robotics-textbook',
 
-  onBrokenLinks: 'warn',
-  markdown: {
-    hooks: {
-      onBrokenMarkdownLinks: 'warn',
-    },
-  },
+  onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can still use
   // this field to set useful metadata like html lang. For example, if
   // your site is Chinese, you may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'ur'],
+    localeConfigs: {
+      ur: {
+        label: 'اردو',
+        direction: 'rtl',
+        htmlLang: 'ur-PK',
+        calendar: 'gregory',
+      },
+    },
   },
 
+  // Custom fields for API configuration
   customFields: {
     apiUrl: process.env.API_URL || 'http://localhost:8000',
   },
+
 
   presets: [
     [
@@ -60,16 +66,11 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Docs',
+          label: 'Curriculum',
           docsPluginId: 'tutorial',
         },
         {
-          to: '/author',
-          label: 'Author',
-          position: 'right',
-        },
-        {
-          href: 'https://github.com/Hasan9060',
+          href: 'https://github.com/hasanrafay/humanoid-robotics-textbook',
           label: 'GitHub',
           position: 'right',
         },
@@ -116,8 +117,12 @@ const config: Config = {
           title: 'More',
           items: [
             {
+              label: 'Blog',
+              to: '/blog',
+            },
+            {
               label: 'GitHub',
-              href: 'https://github.com/Hasan9060/Hackathon_Physical-AI-Humanoid-Robotics--Public',
+              href: 'https://github.com/hasanrafay/humanoid-robotics-textbook',
             },
           ],
         },
