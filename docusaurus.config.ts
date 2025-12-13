@@ -35,12 +35,6 @@ const config: Config = {
     },
   },
 
-  // Custom fields for API configuration
-  customFields: {
-    apiUrl: process.env.API_URL || 'http://localhost:8000',
-  },
-
-
   presets: [
     [
       'classic',
@@ -72,10 +66,6 @@ const config: Config = {
         {
           href: 'https://github.com/hasanrafay/humanoid-robotics-textbook',
           label: 'GitHub',
-          position: 'right',
-        },
-        {
-          type: 'custom-auth',
           position: 'right',
         },
       ],
