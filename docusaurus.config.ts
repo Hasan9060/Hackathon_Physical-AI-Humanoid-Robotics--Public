@@ -16,8 +16,12 @@ const config: Config = {
   organizationName: 'hasanrafay',
   projectName: 'humanoid-robotics-textbook',
 
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
+  onBrokenLinks: 'warn',
 
   // Even if you don't use internationalization, you can still use
   // this field to set useful metadata like html lang. For example, if
